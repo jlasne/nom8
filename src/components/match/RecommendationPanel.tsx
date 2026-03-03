@@ -74,55 +74,43 @@ export default function RecommendationPanel({
     );
   }
 
-  const bestOverall = allRecs.reduce((best, r) =>
-    r.compositeScore > best.compositeScore ? r : best
-  );
-
-  // Locked view — show top 1 + CTA
+  // Locked view — show best 1 per role + CTA
   if (!unlocked) {
+    const roleBests = [
+      tanks[0] ? { rec: tanks[0], label: "Best Tank" } : null,
+      damage[0] ? { rec: damage[0], label: "Best Damage" } : null,
+      support[0] ? { rec: support[0], label: "Best Support" } : null,
+    ].filter(Boolean) as { rec: Recommendation; label: string }[];
+
     return (
       <div className="bg-nom8-card rounded-xl border border-white/5 p-6 space-y-5">
         <div>
-          <h3 className="text-lg font-bold text-nom8-text mb-1">Your best pick this match</h3>
-          <p className="text-sm text-nom8-text-muted">Based on the enemy team composition.</p>
+          <h3 className="text-lg font-bold text-nom8-text mb-1">Your best picks this match</h3>
+          <p className="text-sm text-nom8-text-muted">Top counter pick per role.</p>
         </div>
 
-        {/* Best single pick */}
-        <div className="relative rounded-xl p-4 border border-nom8-orange bg-nom8-orange/5">
-          <span className="absolute -top-2.5 left-4 bg-nom8-orange text-white text-xs font-bold px-2 py-0.5 rounded">
-            BEST PICK
-          </span>
-          <div className="flex items-center gap-3">
-            <HeroIcon hero={bestOverall.hero} size="md" />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="font-semibold text-nom8-text">{bestOverall.hero.name}</p>
-                {bestOverall.isFavorite && (
-                  <span className="text-nom8-orange text-xs">♥ Main</span>
-                )}
+        <div className="space-y-3">
+          {roleBests.map(({ rec, label }) => (
+            <div key={rec.hero.slug} className="relative rounded-xl p-4 border border-white/10 bg-white/5">
+              <span className="absolute -top-2.5 left-4 bg-nom8-card border border-white/10 text-nom8-text-muted text-xs font-bold px-2 py-0.5 rounded">
+                {label}
+              </span>
+              <div className="flex items-center gap-3">
+                <HeroIcon hero={rec.hero} size="md" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-nom8-text">{rec.hero.name}</p>
+                    {rec.isFavorite && <span className="text-nom8-orange text-xs">♥ Main</span>}
+                  </div>
+                  <RoleBadge role={rec.hero.role} />
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-lg font-bold text-nom8-orange">+{rec.compositeScore}</p>
+                  <p className="text-xs text-nom8-text-muted">boost</p>
+                </div>
               </div>
-              <RoleBadge role={bestOverall.hero.role} />
             </div>
-            <div className="text-right shrink-0">
-              <p className="text-xl font-bold text-nom8-orange">+{bestOverall.compositeScore}</p>
-              <p className="text-xs text-nom8-text-muted">winrate boost</p>
-            </div>
-          </div>
-          {bestOverall.breakdown.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1">
-              {bestOverall.breakdown.slice(0, 3).map((b) => {
-                const enemy = heroes.find((h) => h.slug === b.vsHero);
-                return (
-                  <span
-                    key={b.vsHero}
-                    className="text-xs bg-verdict-counter/10 text-verdict-counter px-2 py-0.5 rounded"
-                  >
-                    Strong vs {enemy?.name || b.vsHero}
-                  </span>
-                );
-              })}
-            </div>
-          )}
+          ))}
         </div>
 
         {/* Unlock CTA */}

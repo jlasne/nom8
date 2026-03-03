@@ -10,6 +10,7 @@ type Verdict = "counters" | "neutral" | "countered";
 interface QuickVoteGameProps {
   heroes: Hero[];
   presetHeroSlug?: string;
+  isLoggedIn?: boolean;
 }
 
 interface ResultEntry {
@@ -18,20 +19,21 @@ interface ResultEntry {
   hero?: Hero;
 }
 
-function pickRandom(heroes: Hero[], presetSlug?: string) {
+function pickRandom(heroes: Hero[], presetSlug?: string, maxOptions = 3) {
   const shuffled = [...heroes].sort(() => Math.random() - 0.5);
   if (presetSlug) {
     const preset = heroes.find((h) => h.slug === presetSlug);
     if (preset) {
       const rest = shuffled.filter((h) => h.slug !== presetSlug);
-      return { target: preset, options: rest.slice(0, 3) };
+      return { target: preset, options: rest.slice(0, maxOptions) };
     }
   }
-  return { target: shuffled[0], options: shuffled.slice(1, 4) };
+  return { target: shuffled[0], options: shuffled.slice(1, 1 + maxOptions) };
 }
 
-export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameProps) {
-  const [matchup, setMatchup] = useState(() => pickRandom(heroes, presetHeroSlug));
+export default function QuickVoteGame({ heroes, presetHeroSlug, isLoggedIn = false }: QuickVoteGameProps) {
+  const maxOptions = isLoggedIn ? 3 : 1;
+  const [matchup, setMatchup] = useState(() => pickRandom(heroes, presetHeroSlug, maxOptions));
   const [optionIndex, setOptionIndex] = useState(0);
   const [phase, setPhase] = useState<"voting" | "results">("voting");
   const [countersMe, setCountersMe] = useState<ResultEntry[]>([]);
@@ -76,7 +78,7 @@ export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameP
   );
 
   const nextMatchup = () => {
-    setMatchup(pickRandom(heroes));
+    setMatchup(pickRandom(heroes, undefined, maxOptions));
     setOptionIndex(0);
     setPhase("voting");
     setCountersMe([]);
@@ -155,13 +157,13 @@ export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameP
             </div>
             <div className="w-full space-y-2 mt-1">
               <button onClick={() => handleVote("counters")} disabled={voting} className="w-full py-2.5 px-3 rounded-lg border border-verdict-counter/30 bg-verdict-counter/10 text-verdict-counter hover:bg-verdict-counter/20 font-medium text-sm transition-all disabled:opacity-50">
-                {currentOption.name} wins
+                {currentOption.name} Counters {matchup.target.name}
               </button>
               <button onClick={() => handleVote("neutral")} disabled={voting} className="w-full py-2.5 px-3 rounded-lg border border-white/10 bg-white/5 text-nom8-text-muted hover:bg-white/10 font-medium text-sm transition-all disabled:opacity-50">
                 Even matchup
               </button>
               <button onClick={() => handleVote("countered")} disabled={voting} className="w-full py-2.5 px-3 rounded-lg border border-verdict-countered/30 bg-verdict-countered/10 text-verdict-countered hover:bg-verdict-countered/20 font-medium text-sm transition-all disabled:opacity-50">
-                {matchup.target.name} wins
+                {matchup.target.name} Counters {currentOption.name}
               </button>
             </div>
           </div>

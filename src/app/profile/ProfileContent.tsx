@@ -1,15 +1,28 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { Hero } from "@/types/hero";
 import HeroGrid from "@/components/hero/HeroGrid";
 import HeroIcon from "@/components/hero/HeroIcon";
+import RoleBadge from "@/components/hero/RoleBadge";
 
 interface ProfileContentProps {
   heroes: Hero[];
   initialFavorites: string[];
   email: string;
+}
+
+interface CounterEntry {
+  slug: string;
+  score: number;
+  hero?: Hero;
+}
+
+interface MainInsight {
+  countersMe: CounterEntry[];
+  iCounter: CounterEntry[];
 }
 
 export default function ProfileContent({
@@ -18,7 +31,34 @@ export default function ProfileContent({
   email,
 }: ProfileContentProps) {
   const [favorites, setFavorites] = useState<string[]>(initialFavorites);
+  const [mainsInsights, setMainsInsights] = useState<Record<string, MainInsight>>({});
   const router = useRouter();
+  const heroMap = Object.fromEntries(heroes.map((h) => [h.slug, h]));
+
+  useEffect(() => {
+    if (favorites.length === 0) return;
+    favorites.forEach((slug) => {
+      setMainsInsights((prev) => {
+        if (prev[slug]) return prev;
+        fetch(`/api/matrix?hero=${slug}`)
+          .then((r) => r.json())
+          .then((data) => {
+            const enrich = (arr: CounterEntry[]) =>
+              arr.map((e) => ({ ...e, hero: heroMap[e.slug] }));
+            setMainsInsights((p) => ({
+              ...p,
+              [slug]: {
+                countersMe: enrich(data.countersMe || []).slice(0, 3),
+                iCounter: enrich(data.iCounter || []).slice(0, 3),
+              },
+            }));
+          })
+          .catch(() => {});
+        return prev;
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [favorites.join(",")]);
 
   const handleToggleFavorite = useCallback(async (slug: string) => {
     setFavorites((prev) =>
@@ -97,6 +137,90 @@ export default function ProfileContent({
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Mains Counter Insights */}
+      {favoriteHeroes.length > 0 && (
+        <div className="mb-8 space-y-4">
+          <p className="text-xs text-nom8-text-muted uppercase tracking-wider">
+            Mains Counter Insights
+          </p>
+          {favoriteHeroes.map((hero) => {
+            const insight = mainsInsights[hero.slug];
+            return (
+              <div key={hero.slug} className="bg-nom8-card rounded-xl border border-white/5 p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <HeroIcon hero={hero} size="sm" />
+                  <div>
+                    <Link
+                      href={`/profile/${hero.slug}`}
+                      className="font-semibold text-nom8-text hover:text-nom8-orange transition-colors text-sm"
+                    >
+                      {hero.name}
+                    </Link>
+                    <div className="mt-0.5">
+                      <RoleBadge role={hero.role} />
+                    </div>
+                  </div>
+                </div>
+                {!insight ? (
+                  <p className="text-xs text-nom8-text-muted">Loading...</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2">
+                        Countered by
+                      </p>
+                      <div className="space-y-1">
+                        {insight.countersMe.length === 0 && (
+                          <p className="text-xs text-nom8-text-muted">No data yet</p>
+                        )}
+                        {insight.countersMe.map((e, i) =>
+                          e.hero ? (
+                            <Link
+                              key={e.slug}
+                              href={`/profile/${e.slug}`}
+                              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                            >
+                              <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
+                              <HeroIcon hero={e.hero} size="sm" />
+                              <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
+                              <span className="text-xs text-nom8-text-muted font-mono">{e.score}</span>
+                            </Link>
+                          ) : null
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2">
+                        {hero.name} counters
+                      </p>
+                      <div className="space-y-1">
+                        {insight.iCounter.length === 0 && (
+                          <p className="text-xs text-nom8-text-muted">No data yet</p>
+                        )}
+                        {insight.iCounter.map((e, i) =>
+                          e.hero ? (
+                            <Link
+                              key={e.slug}
+                              href={`/profile/${e.slug}`}
+                              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                            >
+                              <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
+                              <HeroIcon hero={e.hero} size="sm" />
+                              <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
+                              <span className="text-xs text-nom8-text-muted font-mono">{e.score}</span>
+                            </Link>
+                          ) : null
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

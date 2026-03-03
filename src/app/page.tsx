@@ -1,4 +1,5 @@
 import { getHeroes } from "@/lib/data";
+import { getCurrentUser } from "@/lib/auth";
 import QuickVoteGame from "@/components/vote/QuickVoteGame";
 
 export default async function HomePage({
@@ -7,7 +8,13 @@ export default async function HomePage({
   searchParams: Promise<{ hero?: string }>;
 }) {
   const { hero } = await searchParams;
-  const heroes = await getHeroes();
+  const [heroes, user] = await Promise.all([getHeroes(), getCurrentUser()]);
 
-  return <QuickVoteGame heroes={heroes} presetHeroSlug={hero} />;
+  return (
+    <QuickVoteGame
+      heroes={heroes}
+      presetHeroSlug={hero}
+      isLoggedIn={!!user}
+    />
+  );
 }
