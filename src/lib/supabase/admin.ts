@@ -1,7 +1,23 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-// Service-role client — bypasses RLS. Use only in server-side scripts/routes.
-export const adminClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Lazily initialised — avoids crashing during Next.js build when env vars
+// are not yet injected (e.g. Vercel static page-data collection step).
+let _client: SupabaseClient | null = null;
+
+function getAdminClient(): SupabaseClient {
+  if (!_client) {
+    _client = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+  }
+  return _client;
+}
+
+// Proxy forwards all property access to the lazily-created singleton,
+// so every existing `adminClient.from(...)` call continues to work.
+export const adminClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getAdminClient(), prop, receiver);
+  },
+});
