@@ -17,22 +17,9 @@ interface MatchHelperContentProps {
   heroes: Hero[];
 }
 
-export default function MatchHelperContent({
-  heroes,
-}: MatchHelperContentProps) {
+export default function MatchHelperContent({ heroes }: MatchHelperContentProps) {
   const [enemyTeam, setEnemyTeam] = useState<(string | null)[]>([
-    null,
-    null,
-    null,
-    null,
-    null,
-  ]);
-  const [yourTeam, setYourTeam] = useState<(string | null)[]>([
-    null,
-    null,
-    null,
-    null,
-    null,
+    null, null, null, null, null,
   ]);
   const [results, setResults] = useState<{
     tanks: Recommendation[];
@@ -50,48 +37,38 @@ export default function MatchHelperContent({
       setResults(null);
       return;
     }
-
     if (debounceRef.current) clearTimeout(debounceRef.current);
-
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
         const res = await fetch("/api/recommend", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            enemyTeam: enemyTeam.filter(Boolean),
-            yourTeam: yourTeam.filter(Boolean),
-          }),
+          body: JSON.stringify({ enemyTeam: enemyTeam.filter(Boolean) }),
         });
         const data = await res.json();
         setResults(data);
       } catch {
-        // Silently handle errors
+        // silent
       } finally {
         setLoading(false);
       }
     }, 300);
-
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [enemyTeam, yourTeam, hasEnemies]);
+  }, [enemyTeam, hasEnemies]);
 
   return (
     <div>
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-nom8-text mb-2">
-          Match Helper
-        </h1>
+        <h1 className="text-3xl font-bold text-nom8-text mb-2">Counterwatch</h1>
         <p className="text-nom8-text-muted">
-          Turn teammate chaos into easy wins. Enter the enemy comp to see your
-          best picks.
+          Enter the enemy team to see your best counter picks.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Enemy Team */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TeamBuilder
           heroes={heroes}
           title="Enemy Team"
@@ -99,17 +76,6 @@ export default function MatchHelperContent({
           team={enemyTeam}
           onChange={setEnemyTeam}
         />
-
-        {/* Your Team (optional) */}
-        <TeamBuilder
-          heroes={heroes}
-          title="Your Team"
-          subtitle="Optional: fill in your current comp"
-          team={yourTeam}
-          onChange={setYourTeam}
-        />
-
-        {/* Recommendations */}
         <div>
           {hasEnemies ? (
             <RecommendationPanel
@@ -121,9 +87,9 @@ export default function MatchHelperContent({
               loading={loading}
             />
           ) : (
-            <div className="bg-nom8-card rounded-xl border border-white/5 p-8 text-center">
+            <div className="bg-nom8-card rounded-xl border border-white/5 p-8 text-center flex items-center justify-center h-full">
               <p className="text-nom8-text-muted text-sm">
-                Add at least one enemy hero to see recommendations.
+                Add enemy heroes to see counter recommendations.
               </p>
             </div>
           )}

@@ -32,7 +32,6 @@ export default function HeroCard({
           <p className="font-semibold text-nom8-text truncate">{hero.name}</p>
           <div className="flex items-center gap-2 mt-1">
             <RoleBadge role={hero.role} />
-            <span className="text-xs text-nom8-text-muted">{hero.subrole}</span>
           </div>
         </div>
       </div>

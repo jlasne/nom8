@@ -1,169 +1,168 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import type { Hero } from "@/types/hero";
-import HeroCardLarge from "@/components/hero/HeroCardLarge";
-import VoteOptionCard, { type Verdict } from "./VoteOptionCard";
-import VoteResults from "./VoteResults";
+import HeroIcon from "@/components/hero/HeroIcon";
+import RoleBadge from "@/components/hero/RoleBadge";
 
-const flavorLines = [
-  "Help us learn who shuts this hero down.",
-  "Who makes this hero sweat?",
-  "Pick the best counter for this matchup.",
-  "The crowd wants to know: who wins?",
-  "Time to settle this matchup once and for all.",
-];
+type Verdict = "counters" | "neutral" | "countered";
 
 interface QuickVoteGameProps {
   heroes: Hero[];
 }
 
+interface ResultEntry {
+  slug: string;
+  score: number;
+  hero?: Hero;
+}
+
 function pickRandom(heroes: Hero[]) {
   const shuffled = [...heroes].sort(() => Math.random() - 0.5);
-  return {
-    target: shuffled[0],
-    options: shuffled.slice(1, 4),
-  };
+  return { target: shuffled[0], options: shuffled.slice(1, 4) };
 }
 
 export default function QuickVoteGame({ heroes }: QuickVoteGameProps) {
   const [matchup, setMatchup] = useState(() => pickRandom(heroes));
-  const [verdicts, setVerdicts] = useState<Record<string, Verdict>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [results, setResults] = useState<{
-    topCounters: { slug: string; score: number; hero?: Hero }[];
-  } | null>(null);
-  const [flavor] = useState(
-    () => flavorLines[Math.floor(Math.random() * flavorLines.length)]
-  );
+  const [optionIndex, setOptionIndex] = useState(0);
+  const [phase, setPhase] = useState<"voting" | "results">("voting");
+  const [countersMe, setCountersMe] = useState<ResultEntry[]>([]);
+  const [iCounter, setICounter] = useState<ResultEntry[]>([]);
+  const [voting, setVoting] = useState(false);
 
-  const setVerdict = useCallback((heroSlug: string, verdict: Verdict) => {
-    setVerdicts((prev) => ({ ...prev, [heroSlug]: verdict }));
-  }, []);
+  const currentOption = matchup.options[optionIndex];
 
-  const counterCount = Object.values(verdicts).filter(
-    (v) => v === "counters"
-  ).length;
-  const counteredCount = Object.values(verdicts).filter(
-    (v) => v === "countered"
-  ).length;
-  const canSubmit =
-    counterCount >= 1 && counteredCount >= 1 && !isSubmitting;
+  const handleVote = useCallback(
+    async (verdict: Verdict) => {
+      if (voting) return;
+      setVoting(true);
+      try {
+        await fetch("/api/vote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            targetSlug: matchup.target.slug,
+            optionSlug: currentOption.slug,
+            verdict,
+          }),
+        });
+      } catch { /* continue */ }
 
-  const handleSubmit = async () => {
-    if (!canSubmit) return;
-    setIsSubmitting(true);
-
-    const counterSlug = Object.entries(verdicts).find(
-      ([, v]) => v === "counters"
-    )?.[0];
-    const getCounteredSlug = Object.entries(verdicts).find(
-      ([, v]) => v === "countered"
-    )?.[0];
-
-    if (!counterSlug || !getCounteredSlug) return;
-
-    try {
-      const res = await fetch("/api/vote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          targetSlug: matchup.target.slug,
-          counterSlug,
-          getCounteredSlug,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setResults({ topCounters: data.topCounters });
+      const nextIndex = optionIndex + 1;
+      if (nextIndex < matchup.options.length) {
+        setOptionIndex(nextIndex);
+        setVoting(false);
+      } else {
+        try {
+          const res = await fetch(`/api/matrix?hero=${matchup.target.slug}`);
+          const data = await res.json();
+          const heroMap = Object.fromEntries(heroes.map((h) => [h.slug, h]));
+          setCountersMe((data.countersMe || []).map((e: ResultEntry) => ({ ...e, hero: heroMap[e.slug] })));
+          setICounter((data.iCounter || []).map((e: ResultEntry) => ({ ...e, hero: heroMap[e.slug] })));
+        } catch { /* show empty */ }
+        setPhase("results");
+        setVoting(false);
       }
-    } catch {
-      // Silently handle errors
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+    [voting, matchup, currentOption, optionIndex, heroes]
+  );
 
   const nextMatchup = () => {
     setMatchup(pickRandom(heroes));
-    setVerdicts({});
-    setResults(null);
+    setOptionIndex(0);
+    setPhase("voting");
+    setCountersMe([]);
+    setICounter([]);
   };
 
-  if (results) {
+  if (phase === "results") {
     return (
-      <VoteResults
-        targetName={matchup.target.name}
-        topCounters={results.topCounters}
-        onNextMatchup={nextMatchup}
-      />
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-56px)] max-w-xl mx-auto py-8">
+        <p className="text-nom8-text-muted text-sm mb-1">
+          Thanks! Here&apos;s what the crowd thinks about
+        </p>
+        <h2 className="text-2xl font-bold text-nom8-text mb-8 flex items-center gap-3">
+          <HeroIcon hero={matchup.target} size="md" />
+          {matchup.target.name}
+        </h2>
+        <div className="grid grid-cols-2 gap-4 w-full mb-8">
+          <div className="bg-nom8-card rounded-xl border border-white/5 p-4">
+            <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-3 text-center">Countered by</p>
+            <div className="space-y-2">
+              {countersMe.slice(0, 3).map((e, i) => e.hero ? (
+                <div key={e.slug} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
+                  <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
+                  <HeroIcon hero={e.hero} size="sm" />
+                  <span className="text-nom8-text text-sm flex-1 truncate">{e.hero.name}</span>
+                  <span className="text-xs text-nom8-text-muted font-mono">{e.score}</span>
+                </div>
+              ) : null)}
+              {countersMe.length === 0 && <p className="text-nom8-text-muted text-sm text-center">No data yet</p>}
+            </div>
+          </div>
+          <div className="bg-nom8-card rounded-xl border border-white/5 p-4">
+            <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-3 text-center">{matchup.target.name} counters</p>
+            <div className="space-y-2">
+              {iCounter.slice(0, 3).map((e, i) => e.hero ? (
+                <div key={e.slug} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
+                  <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
+                  <HeroIcon hero={e.hero} size="sm" />
+                  <span className="text-nom8-text text-sm flex-1 truncate">{e.hero.name}</span>
+                  <span className="text-xs text-nom8-text-muted font-mono">{e.score}</span>
+                </div>
+              ) : null)}
+              {iCounter.length === 0 && <p className="text-nom8-text-muted text-sm text-center">No data yet</p>}
+            </div>
+          </div>
+        </div>
+        <button onClick={nextMatchup} className="bg-nom8-orange hover:bg-nom8-orange-light text-white font-semibold py-3 px-10 rounded-xl transition-colors">
+          Next matchup &#x2192;
+        </button>
+      </div>
     );
   }
 
   return (
-    <div>
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-nom8-text mb-2">Quick Vote</h1>
-        <p className="text-nom8-text-muted">
-          See what the crowd knows about every matchup.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left: Target Hero */}
-        <div>
-          <p className="text-sm text-nom8-text-muted uppercase tracking-wider mb-3">
-            Target Hero
-          </p>
-          <HeroCardLarge hero={matchup.target} subtitle={flavor} />
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-56px)]">
+      <div className="w-full max-w-2xl">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold text-nom8-text mb-1">Quick Vote</h1>
+          <p className="text-xs text-nom8-text-muted uppercase tracking-widest">{optionIndex + 1} of {matchup.options.length}</p>
         </div>
-
-        {/* Right: Option Heroes */}
-        <div>
-          <p className="text-sm text-nom8-text-muted uppercase tracking-wider mb-3">
-            Rate these matchups
-          </p>
-          <div className="space-y-4">
-            {matchup.options.map((hero) => (
-              <VoteOptionCard
-                key={hero.slug}
-                hero={hero}
-                targetName={matchup.target.name}
-                value={verdicts[hero.slug] || "neutral"}
-                onChange={(v) => setVerdict(hero.slug, v)}
-              />
-            ))}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-nom8-card rounded-2xl border border-white/5 p-8 flex flex-col items-center gap-4">
+            <p className="text-xs text-nom8-text-muted uppercase tracking-widest self-start">Target</p>
+            <HeroIcon hero={matchup.target} size="xl" />
+            <div className="text-center">
+              <p className="text-xl font-bold text-nom8-text">{matchup.target.name}</p>
+              <div className="flex justify-center mt-1"><RoleBadge role={matchup.target.role} /></div>
+            </div>
+          </div>
+          <div className="bg-nom8-card rounded-2xl border border-white/10 p-6 flex flex-col items-center gap-3">
+            <p className="text-xs text-nom8-text-muted uppercase tracking-widest self-start">vs</p>
+            <HeroIcon hero={currentOption} size="xl" />
+            <div className="text-center">
+              <p className="text-xl font-bold text-nom8-text">{currentOption.name}</p>
+              <div className="flex justify-center mt-1"><RoleBadge role={currentOption.role} /></div>
+            </div>
+            <div className="w-full space-y-2 mt-1">
+              <button onClick={() => handleVote("counters")} disabled={voting} className="w-full py-2.5 px-3 rounded-lg border border-verdict-counter/30 bg-verdict-counter/10 text-verdict-counter hover:bg-verdict-counter/20 font-medium text-sm transition-all disabled:opacity-50">
+                {currentOption.name} wins
+              </button>
+              <button onClick={() => handleVote("neutral")} disabled={voting} className="w-full py-2.5 px-3 rounded-lg border border-white/10 bg-white/5 text-nom8-text-muted hover:bg-white/10 font-medium text-sm transition-all disabled:opacity-50">
+                Even matchup
+              </button>
+              <button onClick={() => handleVote("countered")} disabled={voting} className="w-full py-2.5 px-3 rounded-lg border border-verdict-countered/30 bg-verdict-countered/10 text-verdict-countered hover:bg-verdict-countered/20 font-medium text-sm transition-all disabled:opacity-50">
+                {matchup.target.name} wins
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Submit section */}
-      <div className="mt-8 text-center">
-        <div className="text-sm text-nom8-text-muted mb-3">
-          {counterCount === 0 && counteredCount === 0 && (
-            <span>Pick at least 1 &quot;Counters&quot; and 1 &quot;Gets countered&quot;</span>
-          )}
-          {counterCount === 0 && counteredCount > 0 && (
-            <span>Now pick 1 hero that &quot;Counters&quot; {matchup.target.name}</span>
-          )}
-          {counterCount > 0 && counteredCount === 0 && (
-            <span>
-              Now pick 1 hero that &quot;Gets countered by&quot; {matchup.target.name}
-            </span>
-          )}
-          {canSubmit && <span>Ready to submit your vote!</span>}
+        <div className="flex justify-center gap-2 mt-5">
+          {matchup.options.map((_, i) => (
+            <div key={i} className={`w-2 h-2 rounded-full transition-colors ${i < optionIndex ? "bg-nom8-orange" : i === optionIndex ? "bg-nom8-orange/50" : "bg-white/10"}`} />
+          ))}
         </div>
-        <button
-          onClick={handleSubmit}
-          disabled={!canSubmit}
-          className={`py-3 px-10 rounded-xl font-semibold text-white transition-all ${
-            canSubmit
-              ? "bg-nom8-orange hover:bg-nom8-orange-light cursor-pointer"
-              : "bg-white/10 text-nom8-text-muted cursor-not-allowed"
-          }`}
-        >
-          {isSubmitting ? "Submitting..." : "Submit Vote"}
-        </button>
       </div>
     </div>
   );
