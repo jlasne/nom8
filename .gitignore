@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Environment (secrets — never commit)
+.env.local
+.env*.local
+
+# Data files (seeded from Supabase now, no need to commit)
+src/data/users.json
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Debug
+npm-debug.log*
+
+# Claude Code local settings
+.claude/
