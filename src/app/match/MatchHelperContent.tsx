@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { Hero } from "@/types/hero";
+import type { User } from "@/types/user";
 import TeamBuilder from "@/components/match/TeamBuilder";
 import RecommendationPanel from "@/components/match/RecommendationPanel";
-import PricingSection from "@/components/match/PricingSection";
 
 interface Recommendation {
   hero: Hero;
@@ -15,9 +15,10 @@ interface Recommendation {
 
 interface MatchHelperContentProps {
   heroes: Hero[];
+  user: User;
 }
 
-export default function MatchHelperContent({ heroes }: MatchHelperContentProps) {
+export default function MatchHelperContent({ heroes, user }: MatchHelperContentProps) {
   const [enemyTeam, setEnemyTeam] = useState<(string | null)[]>([
     null, null, null, null, null,
   ]);
@@ -62,9 +63,9 @@ export default function MatchHelperContent({ heroes }: MatchHelperContentProps) 
   return (
     <div>
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-nom8-text mb-2">Counterwatch</h1>
+        <h1 className="text-3xl font-bold text-nom8-text mb-2">Competitive</h1>
         <p className="text-nom8-text-muted">
-          Enter the enemy team to see your best counter picks.
+          Enter the enemy team to get your personalised counter picks.
         </p>
       </div>
 
@@ -85,6 +86,7 @@ export default function MatchHelperContent({ heroes }: MatchHelperContentProps) 
               isPaid={results?.isPaid || false}
               heroes={heroes}
               loading={loading}
+              userFavorites={user.favorites}
             />
           ) : (
             <div className="bg-nom8-card rounded-xl border border-white/5 p-8 text-center flex items-center justify-center h-full">
@@ -95,8 +97,6 @@ export default function MatchHelperContent({ heroes }: MatchHelperContentProps) 
           )}
         </div>
       </div>
-
-      <PricingSection />
     </div>
   );
 }

@@ -43,6 +43,14 @@ export default async function HeroDetailPage({
         </div>
       </div>
 
+      {/* Vote CTA */}
+      <Link
+        href={`/?hero=${hero.slug}`}
+        className="flex items-center justify-center gap-2 w-full py-3 px-6 rounded-xl bg-nom8-orange hover:bg-nom8-orange/90 text-white font-semibold text-sm transition-colors mb-6"
+      >
+        Vote on {hero.name} matchups →
+      </Link>
+
       {/* Counter data */}
       <div className="grid grid-cols-2 gap-4">
         {/* Countered by */}

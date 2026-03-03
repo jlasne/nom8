@@ -50,12 +50,12 @@ export function computeRecommendations(
   recommendations.sort((a, b) => b.compositeScore - a.compositeScore);
 
   return {
-    tanks: recommendations.filter((r) => r.hero.role === "Tank").slice(0, 3),
+    tanks: recommendations.filter((r) => r.hero.role === "Tank").slice(0, 5),
     damage: recommendations
       .filter((r) => r.hero.role === "Damage")
-      .slice(0, 3),
+      .slice(0, 5),
     support: recommendations
       .filter((r) => r.hero.role === "Support")
-      .slice(0, 3),
+      .slice(0, 5),
   };
 }

@@ -9,6 +9,7 @@ type Verdict = "counters" | "neutral" | "countered";
 
 interface QuickVoteGameProps {
   heroes: Hero[];
+  presetHeroSlug?: string;
 }
 
 interface ResultEntry {
@@ -17,13 +18,20 @@ interface ResultEntry {
   hero?: Hero;
 }
 
-function pickRandom(heroes: Hero[]) {
+function pickRandom(heroes: Hero[], presetSlug?: string) {
   const shuffled = [...heroes].sort(() => Math.random() - 0.5);
+  if (presetSlug) {
+    const preset = heroes.find((h) => h.slug === presetSlug);
+    if (preset) {
+      const rest = shuffled.filter((h) => h.slug !== presetSlug);
+      return { target: preset, options: rest.slice(0, 3) };
+    }
+  }
   return { target: shuffled[0], options: shuffled.slice(1, 4) };
 }
 
-export default function QuickVoteGame({ heroes }: QuickVoteGameProps) {
-  const [matchup, setMatchup] = useState(() => pickRandom(heroes));
+export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameProps) {
+  const [matchup, setMatchup] = useState(() => pickRandom(heroes, presetHeroSlug));
   const [optionIndex, setOptionIndex] = useState(0);
   const [phase, setPhase] = useState<"voting" | "results">("voting");
   const [countersMe, setCountersMe] = useState<ResultEntry[]>([]);
@@ -126,7 +134,7 @@ export default function QuickVoteGame({ heroes }: QuickVoteGameProps) {
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-56px)]">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-nom8-text mb-1">Quick Vote</h1>
+          <h1 className="text-3xl font-bold text-nom8-text mb-1">Counterwatch</h1>
           <p className="text-xs text-nom8-text-muted uppercase tracking-widest">{optionIndex + 1} of {matchup.options.length}</p>
         </div>
         <div className="grid grid-cols-2 gap-4">

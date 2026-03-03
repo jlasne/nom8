@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const links = [
-  { href: "/", label: "Quick Vote" },
+  { href: "/", label: "Counterwatch" },
   { href: "/profile", label: "My Profile" },
-  { href: "/match", label: "Counterwatch" },
+  { href: "/match", label: "Competitive" },
 ];
 
 export default function Navbar() {
