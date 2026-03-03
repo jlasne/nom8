@@ -1,48 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getHeroes, recordCounterVote, getTopCountersFor } from "@/lib/data";
+import { getHeroes, recordCounterVote } from "@/lib/data";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { targetSlug, counterSlug, getCounteredSlug } = body;
+  const { targetSlug, optionSlug, verdict } = await req.json();
 
-  if (!targetSlug || !counterSlug || !getCounteredSlug) {
-    return NextResponse.json(
-      { error: "Missing required fields" },
-      { status: 400 }
-    );
+  if (!targetSlug || !optionSlug || !verdict) {
+    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  // Validate all slugs exist
+  if (!["counters", "neutral", "countered"].includes(verdict)) {
+    return NextResponse.json({ error: "Invalid verdict" }, { status: 400 });
+  }
+
   const heroes = await getHeroes();
   const slugs = new Set(heroes.map((h) => h.slug));
-  if (!slugs.has(targetSlug) || !slugs.has(counterSlug) || !slugs.has(getCounteredSlug)) {
+  if (!slugs.has(targetSlug) || !slugs.has(optionSlug)) {
     return NextResponse.json({ error: "Invalid hero slug" }, { status: 400 });
   }
 
-  // Ensure all three are different
-  if (
-    targetSlug === counterSlug ||
-    targetSlug === getCounteredSlug ||
-    counterSlug === getCounteredSlug
-  ) {
-    return NextResponse.json(
-      { error: "All heroes must be different" },
-      { status: 400 }
-    );
+  if (verdict === "counters") {
+    await recordCounterVote(optionSlug, targetSlug);
+  } else if (verdict === "countered") {
+    await recordCounterVote(targetSlug, optionSlug);
   }
+  // neutral: nothing recorded
 
-  // counterSlug counters targetSlug
-  await recordCounterVote(counterSlug, targetSlug);
-
-  // targetSlug counters getCounteredSlug
-  await recordCounterVote(targetSlug, getCounteredSlug);
-
-  // Return top counters for the target
-  const topCounters = await getTopCountersFor(targetSlug, 3);
-  const enriched = topCounters.map((entry) => {
-    const hero = heroes.find((h) => h.slug === entry.slug);
-    return { ...entry, hero };
-  });
-
-  return NextResponse.json({ success: true, topCounters: enriched });
+  return NextResponse.json({ success: true });
 }

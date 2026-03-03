@@ -2,27 +2,39 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const links = [
-  { href: "/", label: "Quick Vote" },
+  { href: "/", label: "Counterwatch" },
   { href: "/profile", label: "My Profile" },
-  { href: "/match", label: "Match Helper" },
+  { href: "/match", label: "Competitive" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
+  const [voteCount, setVoteCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/vote-count")
+      .then((r) => r.json())
+      .then((d) => setVoteCount(d.total))
+      .catch(() => {});
+  }, []);
 
   return (
     <nav className="border-b border-white/5 bg-nom8-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl font-bold bg-gradient-to-r from-nom8-orange to-nom8-orange-light bg-clip-text text-transparent">
-              nom8
-            </span>
+        <div className="relative flex items-center h-14">
+          {/* Logo — discrete */}
+          <Link
+            href="/"
+            className="text-xs font-semibold tracking-widest uppercase text-nom8-text-muted hover:text-nom8-text transition-colors"
+          >
+            nom8
           </Link>
 
-          <div className="flex items-center gap-1">
+          {/* Nav links — centered */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1">
             {links.map((link) => {
               const isActive =
                 link.href === "/"
@@ -42,6 +54,18 @@ export default function Navbar() {
                 </Link>
               );
             })}
+          </div>
+
+          {/* Vote count — right */}
+          <div className="ml-auto flex items-center gap-1.5">
+            {voteCount !== null && (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-nom8-orange animate-pulse" />
+                <span className="text-xs font-mono text-nom8-text-muted">
+                  {voteCount.toLocaleString()} votes
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>

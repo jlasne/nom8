@@ -1,15 +1,28 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { Hero } from "@/types/hero";
 import HeroGrid from "@/components/hero/HeroGrid";
-import CounterPanel from "@/components/counter/CounterPanel";
+import HeroIcon from "@/components/hero/HeroIcon";
+import RoleBadge from "@/components/hero/RoleBadge";
 
 interface ProfileContentProps {
   heroes: Hero[];
   initialFavorites: string[];
   email: string;
+}
+
+interface CounterEntry {
+  slug: string;
+  score: number;
+  hero?: Hero;
+}
+
+interface MainInsight {
+  countersMe: CounterEntry[];
+  iCounter: CounterEntry[];
 }
 
 export default function ProfileContent({
@@ -18,15 +31,39 @@ export default function ProfileContent({
   email,
 }: ProfileContentProps) {
   const [favorites, setFavorites] = useState<string[]>(initialFavorites);
-  const [selectedHero, setSelectedHero] = useState<Hero | null>(null);
+  const [mainsInsights, setMainsInsights] = useState<Record<string, MainInsight>>({});
   const router = useRouter();
+  const heroMap = Object.fromEntries(heroes.map((h) => [h.slug, h]));
+
+  useEffect(() => {
+    if (favorites.length === 0) return;
+    favorites.forEach((slug) => {
+      setMainsInsights((prev) => {
+        if (prev[slug]) return prev;
+        fetch(`/api/matrix?hero=${slug}`)
+          .then((r) => r.json())
+          .then((data) => {
+            const enrich = (arr: CounterEntry[]) =>
+              arr.map((e) => ({ ...e, hero: heroMap[e.slug] }));
+            setMainsInsights((p) => ({
+              ...p,
+              [slug]: {
+                countersMe: enrich(data.countersMe || []).slice(0, 3),
+                iCounter: enrich(data.iCounter || []).slice(0, 3),
+              },
+            }));
+          })
+          .catch(() => {});
+        return prev;
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [favorites.join(",")]);
 
   const handleToggleFavorite = useCallback(async (slug: string) => {
-    // Optimistic update
     setFavorites((prev) =>
       prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
     );
-
     try {
       const res = await fetch("/api/favorites", {
         method: "POST",
@@ -34,11 +71,8 @@ export default function ProfileContent({
         body: JSON.stringify({ heroSlug: slug }),
       });
       const data = await res.json();
-      if (data.success) {
-        setFavorites(data.favorites);
-      }
+      if (data.success) setFavorites(data.favorites);
     } catch {
-      // Revert on error
       setFavorites((prev) =>
         prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
       );
@@ -50,14 +84,20 @@ export default function ProfileContent({
     router.refresh();
   };
 
+  const handleHeroClick = (hero: Hero) => {
+    router.push(`/profile/${hero.slug}`);
+  };
+
+  const favoriteHeroes = favorites
+    .map((slug) => heroes.find((h) => h.slug === slug))
+    .filter(Boolean) as Hero[];
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-nom8-text">My Profile</h1>
-          <p className="text-nom8-text-muted text-sm mt-1">
-            Signed in as {email}
-          </p>
+          <h1 className="text-2xl font-bold text-nom8-text">My Profile</h1>
+          <p className="text-xs text-nom8-text-muted mt-0.5">{email}</p>
         </div>
         <button
           onClick={handleLogout}
@@ -67,62 +107,130 @@ export default function ProfileContent({
         </button>
       </div>
 
-      {/* Favorites quick pills */}
-      {favorites.length > 0 && (
-        <div className="mb-6">
-          <p className="text-sm text-nom8-text-muted mb-2">Your mains:</p>
-          <div className="flex flex-wrap gap-2">
-            {favorites.map((slug) => {
-              const hero = heroes.find((h) => h.slug === slug);
-              if (!hero) return null;
-              return (
+      {/* Your Mains */}
+      {favoriteHeroes.length > 0 && (
+        <div className="mb-8">
+          <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-3">
+            Your Mains
+          </p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+            {favoriteHeroes.map((hero) => (
+              <div key={hero.slug} className="relative">
                 <button
-                  key={slug}
-                  onClick={() => setSelectedHero(hero)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                    selectedHero?.slug === slug
-                      ? "border-nom8-orange bg-nom8-orange/10 text-nom8-orange"
-                      : "border-white/10 text-nom8-text hover:border-white/20"
-                  }`}
+                  onClick={() => handleHeroClick(hero)}
+                  className="w-full bg-nom8-card rounded-xl border border-nom8-orange/30 bg-nom8-orange/5 p-3 flex flex-col items-center gap-2 hover:border-nom8-orange/60 transition-all"
                 >
-                  {hero.name}
+                  <HeroIcon hero={hero} size="md" />
+                  <p className="text-xs font-medium text-nom8-text text-center truncate w-full">
+                    {hero.name}
+                  </p>
                 </button>
-              );
-            })}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleFavorite(hero.slug);
+                  }}
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-nom8-orange bg-nom8-orange/20 text-xs hover:bg-nom8-orange/40 transition-colors"
+                >
+                  &#x2665;
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left: Hero Grid */}
-        <div className="lg:col-span-2">
-          <p className="text-sm text-nom8-text-muted mb-4">
-            Lock in your mains so we can optimize your winrate.
+      {/* Mains Counter Insights */}
+      {favoriteHeroes.length > 0 && (
+        <div className="mb-8 space-y-4">
+          <p className="text-xs text-nom8-text-muted uppercase tracking-wider">
+            Mains Counter Insights
           </p>
-          <HeroGrid
-            heroes={heroes}
-            selectedSlug={selectedHero?.slug}
-            onSelect={setSelectedHero}
-            favorites={favorites}
-            onToggleFavorite={handleToggleFavorite}
-          />
+          {favoriteHeroes.map((hero) => {
+            const insight = mainsInsights[hero.slug];
+            return (
+              <div key={hero.slug} className="bg-nom8-card rounded-xl border border-white/5 p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <HeroIcon hero={hero} size="sm" />
+                  <div>
+                    <Link
+                      href={`/profile/${hero.slug}`}
+                      className="font-semibold text-nom8-text hover:text-nom8-orange transition-colors text-sm"
+                    >
+                      {hero.name}
+                    </Link>
+                    <div className="mt-0.5">
+                      <RoleBadge role={hero.role} />
+                    </div>
+                  </div>
+                </div>
+                {!insight ? (
+                  <p className="text-xs text-nom8-text-muted">Loading...</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2">
+                        Countered by
+                      </p>
+                      <div className="space-y-1">
+                        {insight.countersMe.length === 0 && (
+                          <p className="text-xs text-nom8-text-muted">No data yet</p>
+                        )}
+                        {insight.countersMe.map((e, i) =>
+                          e.hero ? (
+                            <Link
+                              key={e.slug}
+                              href={`/profile/${e.slug}`}
+                              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                            >
+                              <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
+                              <HeroIcon hero={e.hero} size="sm" />
+                              <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
+                              <span className="text-xs text-nom8-text-muted font-mono">{e.score}</span>
+                            </Link>
+                          ) : null
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2">
+                        {hero.name} counters
+                      </p>
+                      <div className="space-y-1">
+                        {insight.iCounter.length === 0 && (
+                          <p className="text-xs text-nom8-text-muted">No data yet</p>
+                        )}
+                        {insight.iCounter.map((e, i) =>
+                          e.hero ? (
+                            <Link
+                              key={e.slug}
+                              href={`/profile/${e.slug}`}
+                              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                            >
+                              <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
+                              <HeroIcon hero={e.hero} size="sm" />
+                              <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
+                              <span className="text-xs text-nom8-text-muted font-mono">{e.score}</span>
+                            </Link>
+                          ) : null
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
+      )}
 
-        {/* Right: Counter Panel */}
-        <div className="lg:col-span-1">
-          {selectedHero ? (
-            <div className="sticky top-24">
-              <CounterPanel hero={selectedHero} />
-            </div>
-          ) : (
-            <div className="bg-nom8-card rounded-xl border border-white/5 p-8 text-center">
-              <p className="text-nom8-text-muted text-sm">
-                Select a hero to see who they counter and who counters them.
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* All heroes */}
+      <HeroGrid
+        heroes={heroes}
+        onSelect={handleHeroClick}
+        favorites={favorites}
+        onToggleFavorite={handleToggleFavorite}
+      />
     </div>
   );
 }
