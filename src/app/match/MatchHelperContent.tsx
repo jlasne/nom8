@@ -26,7 +26,6 @@ export default function MatchHelperContent({ heroes, user }: MatchHelperContentP
     tanks: Recommendation[];
     damage: Recommendation[];
     support: Recommendation[];
-    isPaid: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -83,7 +82,6 @@ export default function MatchHelperContent({ heroes, user }: MatchHelperContentP
               tanks={results?.tanks || []}
               damage={results?.damage || []}
               support={results?.support || []}
-              isPaid={results?.isPaid || false}
               heroes={heroes}
               loading={loading}
               userFavorites={user.favorites}

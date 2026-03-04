@@ -10,7 +10,6 @@ type Verdict = "counters" | "neutral" | "countered";
 interface QuickVoteGameProps {
   heroes: Hero[];
   presetHeroSlug?: string;
-  isLoggedIn?: boolean;
 }
 
 interface ResultEntry {
@@ -31,9 +30,8 @@ function pickRandom(heroes: Hero[], presetSlug?: string, maxOptions = 3) {
   return { target: shuffled[0], options: shuffled.slice(1, 1 + maxOptions) };
 }
 
-export default function QuickVoteGame({ heroes, presetHeroSlug, isLoggedIn = false }: QuickVoteGameProps) {
-  const maxOptions = isLoggedIn ? 3 : 1;
-  const [matchup, setMatchup] = useState(() => pickRandom(heroes, presetHeroSlug, maxOptions));
+export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameProps) {
+  const [matchup, setMatchup] = useState(() => pickRandom(heroes, presetHeroSlug, 4));
   const [optionIndex, setOptionIndex] = useState(0);
   const [phase, setPhase] = useState<"voting" | "results">("voting");
   const [countersMe, setCountersMe] = useState<ResultEntry[]>([]);
@@ -78,7 +76,7 @@ export default function QuickVoteGame({ heroes, presetHeroSlug, isLoggedIn = fal
   );
 
   const nextMatchup = () => {
-    setMatchup(pickRandom(heroes, undefined, maxOptions));
+    setMatchup(pickRandom(heroes, undefined, 3));
     setOptionIndex(0);
     setPhase("voting");
     setCountersMe([]);

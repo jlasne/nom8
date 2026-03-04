@@ -32,7 +32,7 @@ export default function AuthForm() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Something went wrong"); return; }
-      router.refresh();
+      router.push("/profile");
     } catch {
       setError("Network error. Please try again.");
     } finally {

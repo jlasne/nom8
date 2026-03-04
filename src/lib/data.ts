@@ -54,7 +54,8 @@ function dbRowToHero(row: Record<string, unknown>): Hero {
 
 export async function recordCounterVote(
   counterSlug: string,
-  targetSlug: string
+  targetSlug: string,
+  weight = 1
 ): Promise<void> {
   // Read current score then increment (non-atomic but fine for this use case)
   const { data } = await adminClient
@@ -64,7 +65,7 @@ export async function recordCounterVote(
     .eq("target_slug", targetSlug)
     .single();
 
-  const newScore = ((data?.score as number) || 0) + 1;
+  const newScore = ((data?.score as number) || 0) + weight;
 
   const { error } = await adminClient.from("counter_matrix").upsert(
     { counter_slug: counterSlug, target_slug: targetSlug, score: newScore },

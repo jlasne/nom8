@@ -16,7 +16,6 @@ interface RecommendationPanelProps {
   tanks: Recommendation[];
   damage: Recommendation[];
   support: Recommendation[];
-  isPaid: boolean;
   heroes: Hero[];
   loading: boolean;
   userFavorites?: string[];
@@ -50,7 +49,6 @@ export default function RecommendationPanel({
   tanks,
   damage,
   support,
-  isPaid,
   heroes,
   loading,
   userFavorites = [],
