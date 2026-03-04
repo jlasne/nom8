@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import type { Hero } from "@/types/hero";
 import HeroIcon from "@/components/hero/HeroIcon";
 import RoleBadge from "@/components/hero/RoleBadge";
@@ -123,9 +124,14 @@ export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameP
             </div>
           </div>
         </div>
-        <button onClick={nextMatchup} className="bg-nom8-orange hover:bg-nom8-orange-light text-white font-semibold py-3 px-10 rounded-xl transition-colors">
-          Next matchup &#x2192;
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3 w-full">
+          <button onClick={nextMatchup} className="flex-1 bg-nom8-orange hover:bg-nom8-orange-light text-white font-semibold py-3 px-6 rounded-xl transition-colors">
+            Next matchup →
+          </button>
+          <Link href="/profile" className="flex-1 text-center border border-white/10 hover:bg-white/5 text-nom8-text font-semibold py-3 px-6 rounded-xl transition-colors">
+            See my results →
+          </Link>
+        </div>
       </div>
     );
   }

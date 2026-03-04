@@ -15,7 +15,7 @@ interface Recommendation {
 
 interface MatchHelperContentProps {
   heroes: Hero[];
-  user: User;
+  user: User | null;
 }
 
 export default function MatchHelperContent({ heroes, user }: MatchHelperContentProps) {
@@ -84,7 +84,7 @@ export default function MatchHelperContent({ heroes, user }: MatchHelperContentP
               support={results?.support || []}
               heroes={heroes}
               loading={loading}
-              userFavorites={user.favorites}
+              userFavorites={user?.favorites || []}
             />
           ) : (
             <div className="bg-nom8-card rounded-xl border border-white/5 p-8 text-center flex items-center justify-center h-full">

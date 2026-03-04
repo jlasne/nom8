@@ -25,12 +25,11 @@ export default function Navbar() {
     <nav className="border-b border-white/5 bg-nom8-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative flex items-center h-14">
-          {/* Logo — discrete */}
-          <Link
-            href="/"
-            className="text-xs font-semibold tracking-widest uppercase text-nom8-text-muted hover:text-nom8-text transition-colors"
-          >
-            nom8
+          {/* Logo — orange triangle */}
+          <Link href="/" className="flex items-center text-nom8-orange hover:text-nom8-orange-light transition-colors" aria-label="nom8 home">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <polygon points="10,2 19,18 1,18" />
+            </svg>
           </Link>
 
           {/* Nav links — centered */}

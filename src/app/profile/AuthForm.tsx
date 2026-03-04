@@ -25,13 +25,22 @@ export default function AuthForm() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(`/api/auth/${mode === "login" ? "login" : "register"}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || "Something went wrong"); return; }
+      const supabase = createClient();
+      if (mode === "login") {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) { setError("Invalid email or password"); return; }
+      } else {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) { setError(data.error || "Something went wrong"); return; }
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) { setError(signInError.message); return; }
+      }
+      router.refresh();
       router.push("/profile");
     } catch {
       setError("Network error. Please try again.");
