@@ -125,6 +125,42 @@ export async function getCounterMatrix(): Promise<Record<string, Record<string, 
   return matrix;
 }
 
+// ── Global stats ──
+
+export async function getGlobalStats(): Promise<{
+  bestCounters: { slug: string; totalScore: number }[];
+  mostCountered: { slug: string; totalScore: number }[];
+}> {
+  const { data, error } = await adminClient
+    .from("counter_matrix")
+    .select("counter_slug, target_slug, score");
+
+  if (error) throw new Error(error.message);
+
+  const counterTotals: Record<string, number> = {};
+  const targetTotals: Record<string, number> = {};
+
+  for (const row of data || []) {
+    const c = row.counter_slug as string;
+    const t = row.target_slug as string;
+    const s = row.score as number;
+    counterTotals[c] = (counterTotals[c] || 0) + s;
+    targetTotals[t] = (targetTotals[t] || 0) + s;
+  }
+
+  const bestCounters = Object.entries(counterTotals)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3)
+    .map(([slug, totalScore]) => ({ slug, totalScore }));
+
+  const mostCountered = Object.entries(targetTotals)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3)
+    .map(([slug, totalScore]) => ({ slug, totalScore }));
+
+  return { bestCounters, mostCountered };
+}
+
 // ── Favorites (used by API routes with user-scoped client) ──
 
 export async function getFavorites(userId: string): Promise<string[]> {

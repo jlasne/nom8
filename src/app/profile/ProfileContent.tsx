@@ -140,89 +140,95 @@ export default function ProfileContent({
         </div>
       )}
 
-      {/* Mains Counter Insights */}
-      {favoriteHeroes.length > 0 && (
-        <div className="mb-8 space-y-4">
-          <p className="text-xs text-nom8-text-muted uppercase tracking-wider">
-            Mains Counter Insights
-          </p>
-          {favoriteHeroes.map((hero) => {
+      {/* Mains Counter Insights — aggregated across all mains */}
+      {favoriteHeroes.length > 0 && (() => {
+        const allLoaded = favoriteHeroes.every((h) => mainsInsights[h.slug]);
+        const aggCountersMe: Record<string, number> = {};
+        const aggICounter: Record<string, number> = {};
+        if (allLoaded) {
+          favoriteHeroes.forEach((hero) => {
             const insight = mainsInsights[hero.slug];
-            return (
-              <div key={hero.slug} className="bg-nom8-card rounded-xl border border-white/5 p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <HeroIcon hero={hero} size="sm" />
+            insight.countersMe.forEach((e) => {
+              aggCountersMe[e.slug] = (aggCountersMe[e.slug] || 0) + e.score;
+            });
+            insight.iCounter.forEach((e) => {
+              aggICounter[e.slug] = (aggICounter[e.slug] || 0) + e.score;
+            });
+          });
+        }
+        const topCounteredBy = Object.entries(aggCountersMe)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 3)
+          .map(([slug, score]) => ({ slug, score, hero: heroMap[slug] }));
+        const topICounter = Object.entries(aggICounter)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 3)
+          .map(([slug, score]) => ({ slug, score, hero: heroMap[slug] }));
+
+        return (
+          <div className="mb-8">
+            <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-3">
+              Mains Counter Insights
+            </p>
+            {!allLoaded ? (
+              <p className="text-xs text-nom8-text-muted">Loading...</p>
+            ) : (
+              <div className="bg-nom8-card rounded-xl border border-white/5 p-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Link
-                      href={`/profile/${hero.slug}`}
-                      className="font-semibold text-nom8-text hover:text-nom8-orange transition-colors text-sm"
-                    >
-                      {hero.name}
-                    </Link>
-                    <div className="mt-0.5">
-                      <RoleBadge role={hero.role} />
+                    <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2">
+                      Your mains get countered by
+                    </p>
+                    <div className="space-y-1">
+                      {topCounteredBy.length === 0 && (
+                        <p className="text-xs text-nom8-text-muted">No data yet</p>
+                      )}
+                      {topCounteredBy.map((e, i) =>
+                        e.hero ? (
+                          <Link
+                            key={e.slug}
+                            href={`/profile/${e.slug}`}
+                            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                          >
+                            <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
+                            <HeroIcon hero={e.hero} size="sm" />
+                            <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
+                            <span className="text-xs text-nom8-text-muted font-mono">{e.score}</span>
+                          </Link>
+                        ) : null
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2">
+                      Your mains counter best
+                    </p>
+                    <div className="space-y-1">
+                      {topICounter.length === 0 && (
+                        <p className="text-xs text-nom8-text-muted">No data yet</p>
+                      )}
+                      {topICounter.map((e, i) =>
+                        e.hero ? (
+                          <Link
+                            key={e.slug}
+                            href={`/profile/${e.slug}`}
+                            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                          >
+                            <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
+                            <HeroIcon hero={e.hero} size="sm" />
+                            <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
+                            <span className="text-xs text-nom8-text-muted font-mono">{e.score}</span>
+                          </Link>
+                        ) : null
+                      )}
                     </div>
                   </div>
                 </div>
-                {!insight ? (
-                  <p className="text-xs text-nom8-text-muted">Loading...</p>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2">
-                        Countered by
-                      </p>
-                      <div className="space-y-1">
-                        {insight.countersMe.length === 0 && (
-                          <p className="text-xs text-nom8-text-muted">No data yet</p>
-                        )}
-                        {insight.countersMe.map((e, i) =>
-                          e.hero ? (
-                            <Link
-                              key={e.slug}
-                              href={`/profile/${e.slug}`}
-                              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
-                            >
-                              <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
-                              <HeroIcon hero={e.hero} size="sm" />
-                              <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
-                              <span className="text-xs text-nom8-text-muted font-mono">{e.score}</span>
-                            </Link>
-                          ) : null
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2">
-                        {hero.name} counters
-                      </p>
-                      <div className="space-y-1">
-                        {insight.iCounter.length === 0 && (
-                          <p className="text-xs text-nom8-text-muted">No data yet</p>
-                        )}
-                        {insight.iCounter.map((e, i) =>
-                          e.hero ? (
-                            <Link
-                              key={e.slug}
-                              href={`/profile/${e.slug}`}
-                              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
-                            >
-                              <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
-                              <HeroIcon hero={e.hero} size="sm" />
-                              <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
-                              <span className="text-xs text-nom8-text-muted font-mono">{e.score}</span>
-                            </Link>
-                          ) : null
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
-            );
-          })}
-        </div>
-      )}
+            )}
+          </div>
+        );
+      })()}
 
       {/* All heroes */}
       <HeroGrid

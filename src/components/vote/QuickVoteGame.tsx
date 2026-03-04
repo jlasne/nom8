@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import type { Hero } from "@/types/hero";
 import HeroIcon from "@/components/hero/HeroIcon";
@@ -17,6 +17,55 @@ interface ResultEntry {
   slug: string;
   score: number;
   hero?: Hero;
+}
+
+interface GlobalStatsEntry {
+  slug: string;
+  totalScore: number;
+  hero: Hero | null;
+}
+
+interface GlobalStats {
+  bestCounters: GlobalStatsEntry[];
+  mostCountered: GlobalStatsEntry[];
+}
+
+function GlobalStatsWidget({ stats }: { stats: GlobalStats }) {
+  return (
+    <div className="w-full max-w-2xl mt-6">
+      <p className="text-xs text-nom8-text-muted uppercase tracking-widest text-center mb-3">Global Rankings</p>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-nom8-card rounded-xl border border-white/5 p-3">
+          <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2 text-center">Best counters</p>
+          <div className="space-y-1.5">
+            {stats.bestCounters.map((e, i) =>
+              e.hero ? (
+                <div key={e.slug} className="flex items-center gap-2">
+                  <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
+                  <HeroIcon hero={e.hero} size="sm" />
+                  <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
+                </div>
+              ) : null
+            )}
+          </div>
+        </div>
+        <div className="bg-nom8-card rounded-xl border border-white/5 p-3">
+          <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2 text-center">Most countered</p>
+          <div className="space-y-1.5">
+            {stats.mostCountered.map((e, i) =>
+              e.hero ? (
+                <div key={e.slug} className="flex items-center gap-2">
+                  <span className="text-role-damage font-bold text-xs w-4">#{i + 1}</span>
+                  <HeroIcon hero={e.hero} size="sm" />
+                  <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
+                </div>
+              ) : null
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function pickRandom(heroes: Hero[], presetSlug?: string, maxOptions = 3) {
@@ -38,6 +87,14 @@ export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameP
   const [countersMe, setCountersMe] = useState<ResultEntry[]>([]);
   const [iCounter, setICounter] = useState<ResultEntry[]>([]);
   const [voting, setVoting] = useState(false);
+  const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
+
+  useEffect(() => {
+    fetch("/api/global-stats")
+      .then((r) => r.json())
+      .then((data) => setGlobalStats(data))
+      .catch(() => {});
+  }, []);
 
   const currentOption = matchup.options[optionIndex];
 
@@ -132,6 +189,7 @@ export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameP
             See my results →
           </Link>
         </div>
+        {globalStats && <GlobalStatsWidget stats={globalStats} />}
       </div>
     );
   }
@@ -178,6 +236,7 @@ export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameP
           ))}
         </div>
       </div>
+      {globalStats && <GlobalStatsWidget stats={globalStats} />}
     </div>
   );
 }

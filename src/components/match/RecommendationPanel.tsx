@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import type { Hero } from "@/types/hero";
 import HeroIcon from "@/components/hero/HeroIcon";
 import RoleBadge from "@/components/hero/RoleBadge";
@@ -53,8 +52,6 @@ export default function RecommendationPanel({
   loading,
   userFavorites = [],
 }: RecommendationPanelProps) {
-  const [unlocked, setUnlocked] = useState(false);
-
   if (loading) {
     return (
       <div className="bg-nom8-card rounded-xl border border-white/5 p-8 text-center">
@@ -72,62 +69,6 @@ export default function RecommendationPanel({
     );
   }
 
-  // Locked view — show best 1 per role + CTA
-  if (!unlocked) {
-    const roleBests = [
-      tanks[0] ? { rec: tanks[0], label: "Best Tank" } : null,
-      damage[0] ? { rec: damage[0], label: "Best Damage" } : null,
-      support[0] ? { rec: support[0], label: "Best Support" } : null,
-    ].filter(Boolean) as { rec: Recommendation; label: string }[];
-
-    return (
-      <div className="bg-nom8-card rounded-xl border border-white/5 p-6 space-y-5">
-        <div>
-          <h3 className="text-lg font-bold text-nom8-text mb-1">Your best picks this match</h3>
-          <p className="text-sm text-nom8-text-muted">Top counter pick per role.</p>
-        </div>
-
-        <div className="space-y-3">
-          {roleBests.map(({ rec, label }) => (
-            <div key={rec.hero.slug} className="relative rounded-xl p-4 border border-white/10 bg-white/5">
-              <span className="absolute -top-2.5 left-4 bg-nom8-card border border-white/10 text-nom8-text-muted text-xs font-bold px-2 py-0.5 rounded">
-                {label}
-              </span>
-              <div className="flex items-center gap-3">
-                <HeroIcon hero={rec.hero} size="md" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold text-nom8-text">{rec.hero.name}</p>
-                    {rec.isFavorite && <span className="text-nom8-orange text-xs">♥ Main</span>}
-                  </div>
-                  <RoleBadge role={rec.hero.role} />
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-lg font-bold text-nom8-orange">+{rec.compositeScore}</p>
-                  <p className="text-xs text-nom8-text-muted">boost</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Unlock CTA */}
-        <div className="border border-white/10 rounded-xl p-5 text-center space-y-3">
-          <p className="text-sm text-nom8-text-muted">
-            See personalised picks based on your mains, the perfect team composition, and top 5 heroes per role.
-          </p>
-          <button
-            onClick={() => setUnlocked(true)}
-            className="w-full py-3 px-6 rounded-xl bg-nom8-orange hover:bg-nom8-orange/90 text-white font-semibold text-sm transition-colors"
-          >
-            Unlock full insights →
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Unlocked view
   const favoriteSet = new Set(userFavorites);
   const mainRecs = allRecs.filter((r) => favoriteSet.has(r.hero.slug)).sort((a, b) => b.compositeScore - a.compositeScore);
 
