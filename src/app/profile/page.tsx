@@ -1,25 +1,32 @@
 import { getHeroes } from "@/lib/data";
 import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { adminClient } from "@/lib/supabase/admin";
 import ProfileContent from "./ProfileContent";
-import AuthForm from "./AuthForm";
 
-export default async function ProfilePage() {
-  const user = await getCurrentUser();
-  const heroes = await getHeroes();
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string }>;
+}) {
+  const { code } = await searchParams;
 
-  if (!user) {
-    return (
-      <div className="relative min-h-[calc(100vh-56px)]">
-        <div className="blur-sm pointer-events-none select-none opacity-50" aria-hidden="true">
-          <ProfileContent heroes={heroes} initialFavorites={[]} email="player@nom8.gg" />
-        </div>
-        <div className="absolute inset-0 flex items-start justify-center pt-16 px-4">
-          <AuthForm />
-        </div>
-      </div>
-    );
+  // Handle OAuth callback redirected here instead of /auth/callback
+  if (code) {
+    const supabase = await createClient();
+    await supabase.auth.exchangeCodeForSession(code);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await adminClient.from("profiles").upsert({ id: user.id }, { onConflict: "id" });
+    }
+    redirect("/profile");
   }
 
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
+  const heroes = await getHeroes();
   return (
     <ProfileContent
       heroes={heroes}

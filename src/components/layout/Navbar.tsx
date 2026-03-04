@@ -1,18 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
-const links = [
+const authLinks = [
   { href: "/", label: "Counterwatch" },
   { href: "/profile", label: "My Profile" },
   { href: "/match", label: "Competitive" },
 ];
 
-export default function Navbar() {
+const publicLinks = [
+  { href: "/", label: "Counterwatch" },
+];
+
+export default function Navbar({ isLoggedIn: initialIsLoggedIn }: { isLoggedIn: boolean }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(initialIsLoggedIn);
   const [voteCount, setVoteCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setIsLoggedIn(!!session);
+      router.refresh();
+    });
+    return () => subscription.unsubscribe();
+  }, [router]);
 
   useEffect(() => {
     fetch("/api/vote-count")
@@ -20,6 +36,8 @@ export default function Navbar() {
       .then((d) => setVoteCount(d.total))
       .catch(() => {});
   }, []);
+
+  const links = isLoggedIn ? authLinks : publicLinks;
 
   return (
     <nav className="border-b border-white/5 bg-nom8-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -55,15 +73,23 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Vote count — right */}
-          <div className="ml-auto flex items-center gap-1.5">
+          {/* Right side */}
+          <div className="ml-auto flex items-center gap-3">
             {voteCount !== null && (
-              <>
+              <span className="hidden sm:flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-nom8-orange animate-pulse" />
                 <span className="text-xs font-mono text-nom8-text-muted">
                   {voteCount.toLocaleString()} votes
                 </span>
-              </>
+              </span>
+            )}
+            {!isLoggedIn && (
+              <Link
+                href="/login"
+                className="px-4 py-1.5 rounded-lg text-sm font-semibold bg-nom8-orange hover:bg-nom8-orange/90 text-white transition-colors"
+              >
+                Connect
+              </Link>
             )}
           </div>
         </div>
