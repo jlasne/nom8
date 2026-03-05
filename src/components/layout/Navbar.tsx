@@ -43,10 +43,17 @@ export default function Navbar({ isLoggedIn: initialIsLoggedIn }: { isLoggedIn: 
     <nav className="border-b border-white/5 bg-nom8-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative flex items-center h-14">
-          {/* Logo — orange triangle */}
-          <Link href="/" className="flex items-center text-nom8-orange hover:text-nom8-orange-light transition-colors" aria-label="nom8 home">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <polygon points="10,2 19,18 1,18" />
+          {/* Logo */}
+          <Link href="/" className="flex items-center" aria-label="nom8 home">
+            <svg width="28" height="28" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#FFAA55" />
+                  <stop offset="100%" stopColor="#FF5500" />
+                </linearGradient>
+              </defs>
+              <circle cx="50" cy="50" r="44" stroke="url(#logoGrad)" strokeWidth="11" fill="none" />
+              <polyline points="26,66 50,36 74,66" stroke="url(#logoGrad)" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" fill="none" />
             </svg>
           </Link>
 
