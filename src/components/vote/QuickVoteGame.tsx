@@ -206,7 +206,8 @@ export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameP
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-56px)]">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-nom8-text mb-1">Counterwatch</h1>
+          <h1 className="text-3xl font-bold text-nom8-text mb-2">Vote on Counter Matchups</h1>
+          <p className="text-xs text-nom8-text-muted mb-1">Help the community find the best counters</p>
           <p className="text-xs text-nom8-text-muted uppercase tracking-widest">
             {optionIndex + 1} of {matchup.options.length}
           </p>
