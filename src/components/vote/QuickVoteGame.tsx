@@ -33,18 +33,26 @@ const TIER_STYLES = [
 ];
 const TIER_CUTS = [0.10, 0.25, 0.50, 0.75, 1.00];
 
+const ROLE_FILTER_COLORS: Record<string, string> = {
+  Tank: "bg-blue-500 text-white",
+  Damage: "bg-red-500 text-white",
+  Support: "bg-green-500 text-white",
+};
+
 function TierList({ scores, heroes }: { scores: Record<string, number>; heroes: Hero[] }) {
+  const [roleFilter, setRoleFilter] = useState<"All" | "Tank" | "Damage" | "Support">("All");
   const heroMap = Object.fromEntries(heroes.map((h) => [h.slug, h]));
+
   const ranked = Object.entries(scores)
     .map(([slug, score]) => ({ slug, score, hero: heroMap[slug] }))
-    .filter((e) => e.hero)
+    .filter((e) => e.hero && (roleFilter === "All" || e.hero!.role === roleFilter))
     .sort((a, b) => b.score - a.score);
 
-  if (ranked.length === 0) return null;
+  if (ranked.length === 0 && roleFilter === "All") return null;
 
   const n = ranked.length;
   let prev = 0;
-  const tiers = TIER_CUTS.map((pct, idx) => {
+  const tiers = n === 0 ? [] : TIER_CUTS.map((pct, idx) => {
     const end = Math.round(pct * n);
     const items = ranked.slice(prev, end);
     prev = end;
@@ -53,21 +61,40 @@ function TierList({ scores, heroes }: { scores: Record<string, number>; heroes: 
 
   return (
     <div className="w-full max-w-2xl mt-8">
-      <p className="text-xs text-nom8-text-muted uppercase tracking-widest text-center mb-3">Counter tier list</p>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs text-nom8-text-muted uppercase tracking-widest">Counter tier list</p>
+        <div className="flex gap-1">
+          {(["All", "Tank", "Damage", "Support"] as const).map((role) => (
+            <button
+              key={role}
+              onClick={() => setRoleFilter(role)}
+              className={`text-xs px-2.5 py-1 rounded-lg transition-colors ${
+                roleFilter === role
+                  ? (role === "All" ? "bg-nom8-orange text-white" : ROLE_FILTER_COLORS[role])
+                  : "bg-white/5 text-nom8-text-muted hover:bg-white/10"
+              }`}
+            >
+              {role}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="space-y-1.5">
         {tiers.map(({ label, style, items }) => (
-          <div key={label} className={`flex items-center gap-3 rounded-xl border bg-nom8-card px-3 py-2 ${style}`}>
+          <div key={label} className={`flex items-center gap-3 rounded-xl border bg-nom8-card px-3 py-2.5 ${style}`}>
             <span className="text-lg font-black w-5 text-center shrink-0">{label}</span>
-            <div className="w-px h-6 bg-current opacity-20 shrink-0" />
-            <div className="flex flex-wrap gap-1">
+            <div className="w-px h-8 bg-current opacity-20 shrink-0" />
+            <div className="flex flex-wrap gap-1.5">
               {items.map((e) => (
                 <Link key={e.slug} href={`/profile/${e.slug}`} title={e.hero!.name} className="hover:scale-110 transition-transform">
-                  <HeroIcon hero={e.hero!} size="sm" />
+                  <HeroIcon hero={e.hero!} size="md" />
                 </Link>
               ))}
+              {items.length === 0 && <p className="text-xs opacity-50">—</p>}
             </div>
           </div>
         ))}
+        {tiers.length === 0 && <p className="text-xs text-nom8-text-muted text-center py-4">No data yet</p>}
       </div>
     </div>
   );

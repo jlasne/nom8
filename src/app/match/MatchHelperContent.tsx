@@ -68,32 +68,32 @@ export default function MatchHelperContent({ heroes, user }: MatchHelperContentP
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TeamBuilder
-          heroes={heroes}
-          title="Enemy Team"
-          subtitle="Who are you playing against?"
-          team={enemyTeam}
-          onChange={setEnemyTeam}
-        />
-        <div>
-          {hasEnemies ? (
-            <RecommendationPanel
-              tanks={results?.tanks || []}
-              damage={results?.damage || []}
-              support={results?.support || []}
-              heroes={heroes}
-              loading={loading}
-              userFavorites={user?.favorites || []}
-            />
-          ) : (
-            <div className="bg-nom8-card rounded-xl border border-white/5 p-8 text-center flex items-center justify-center h-full">
-              <p className="text-nom8-text-muted text-sm">
-                Add enemy heroes to see counter recommendations.
-              </p>
-            </div>
-          )}
-        </div>
+      <TeamBuilder
+        heroes={heroes}
+        title="Enemy Team"
+        subtitle="Who are you playing against?"
+        team={enemyTeam}
+        onChange={setEnemyTeam}
+        horizontal
+      />
+
+      <div className="mt-6">
+        {hasEnemies ? (
+          <RecommendationPanel
+            tanks={results?.tanks || []}
+            damage={results?.damage || []}
+            support={results?.support || []}
+            heroes={heroes}
+            loading={loading}
+            userFavorites={user?.favorites || []}
+          />
+        ) : (
+          <div className="bg-nom8-card rounded-xl border border-white/5 p-8 text-center">
+            <p className="text-nom8-text-muted text-sm">
+              Add enemy heroes to see counter recommendations.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -22,6 +22,7 @@ interface TeamBuilderProps {
   subtitle: string;
   team: (string | null)[];
   onChange: (team: (string | null)[]) => void;
+  horizontal?: boolean;
 }
 
 export default function TeamBuilder({
@@ -30,35 +31,39 @@ export default function TeamBuilder({
   subtitle,
   team,
   onChange,
+  horizontal = false,
 }: TeamBuilderProps) {
   const usedSlugs = team.filter(Boolean) as string[];
+
+  const slots = teamSlots.map((slot, i) => (
+    <div key={i}>
+      <label className={`block text-xs text-nom8-text-muted mb-1 uppercase tracking-wider ${horizontal ? "text-center" : ""}`}>
+        {slot.label}
+      </label>
+      <HeroSelector
+        heroes={heroes}
+        role={slot.role}
+        value={team[i]}
+        onChange={(slug) => {
+          const next = [...team];
+          next[i] = slug;
+          onChange(next);
+        }}
+        excludeSlugs={usedSlugs.filter((s) => s !== team[i])}
+        placeholder={`Select ${slot.role}...`}
+      />
+    </div>
+  ));
 
   return (
     <div className="bg-nom8-card rounded-xl border border-white/5 p-6">
       <h3 className="text-lg font-bold text-nom8-text mb-1">{title}</h3>
       <p className="text-sm text-nom8-text-muted mb-4">{subtitle}</p>
-
-      <div className="space-y-3">
-        {teamSlots.map((slot, i) => (
-          <div key={i}>
-            <label className="block text-xs text-nom8-text-muted mb-1 uppercase tracking-wider">
-              {slot.label}
-            </label>
-            <HeroSelector
-              heroes={heroes}
-              role={slot.role}
-              value={team[i]}
-              onChange={(slug) => {
-                const next = [...team];
-                next[i] = slug;
-                onChange(next);
-              }}
-              excludeSlugs={usedSlugs.filter((s) => s !== team[i])}
-              placeholder={`Select ${slot.role}...`}
-            />
-          </div>
-        ))}
-      </div>
+      {horizontal ? (
+        <div className="grid grid-cols-5 gap-3">{slots}</div>
+      ) : (
+        <div className="space-y-3">{slots}</div>
+      )}
     </div>
   );
 }
