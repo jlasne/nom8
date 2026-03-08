@@ -32,10 +32,12 @@ export async function GET() {
     .slice(0, 3)
     .map(([slug, totalScore]) => ({ slug, totalScore, hero: heroMap[slug] ?? null }));
 
-  // All target scores for subrole suggestion in profile
   const allTargetScores = Object.fromEntries(
     Object.entries(targetTotals).map(([slug, score]) => [slug, score])
   );
+  const allCounterScores = Object.fromEntries(
+    Object.entries(counterTotals).map(([slug, score]) => [slug, score])
+  );
 
-  return NextResponse.json({ byRole, bestCounters, mostCountered, allTargetScores });
+  return NextResponse.json({ byRole, bestCounters, mostCountered, allTargetScores, allCounterScores });
 }

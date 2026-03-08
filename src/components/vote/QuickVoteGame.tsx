@@ -19,43 +19,52 @@ interface ResultEntry {
   hero?: Hero;
 }
 
-interface GlobalStatsEntry {
-  slug: string;
-  totalScore: number;
-  hero: Hero | null;
-}
-
 interface GlobalStats {
-  byRole: Record<string, GlobalStatsEntry[]>;
-  bestCounters: GlobalStatsEntry[];
-  mostCountered: GlobalStatsEntry[];
+  allCounterScores: Record<string, number>;
 }
 
-const ROLE_COLORS: Record<string, string> = {
-  Tank: "text-blue-400",
-  Damage: "text-red-400",
-  Support: "text-green-400",
-};
+const TIER_LABELS = ["S", "A", "B", "C", "D"];
+const TIER_STYLES = [
+  "border-yellow-500/40 text-yellow-400",
+  "border-orange-500/40 text-orange-400",
+  "border-green-500/40 text-green-400",
+  "border-blue-500/40 text-blue-400",
+  "border-purple-500/40 text-purple-400",
+];
+const TIER_CUTS = [0.10, 0.25, 0.50, 0.75, 1.00];
 
-function GlobalStatsWidget({ stats }: { stats: GlobalStats }) {
-  const roles = ["Tank", "Damage", "Support"] as const;
+function TierList({ scores, heroes }: { scores: Record<string, number>; heroes: Hero[] }) {
+  const heroMap = Object.fromEntries(heroes.map((h) => [h.slug, h]));
+  const ranked = Object.entries(scores)
+    .map(([slug, score]) => ({ slug, score, hero: heroMap[slug] }))
+    .filter((e) => e.hero)
+    .sort((a, b) => b.score - a.score);
+
+  if (ranked.length === 0) return null;
+
+  const n = ranked.length;
+  let prev = 0;
+  const tiers = TIER_CUTS.map((pct, idx) => {
+    const end = Math.round(pct * n);
+    const items = ranked.slice(prev, end);
+    prev = end;
+    return { label: TIER_LABELS[idx], style: TIER_STYLES[idx], items };
+  });
+
   return (
-    <div className="w-full max-w-2xl mt-6">
-      <p className="text-xs text-nom8-text-muted uppercase tracking-widest text-center mb-3">Best counters by role</p>
-      <div className="grid grid-cols-3 gap-2">
-        {roles.map((role) => (
-          <div key={role} className="bg-nom8-card rounded-xl border border-white/5 p-3">
-            <p className={`text-xs font-semibold uppercase tracking-wider mb-2 text-center ${ROLE_COLORS[role]}`}>{role}</p>
-            <div className="space-y-1.5">
-              {(stats.byRole?.[role] ?? []).map((e, i) =>
-                e.hero ? (
-                  <div key={e.slug} className="flex items-center gap-1.5">
-                    <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
-                    <HeroIcon hero={e.hero} size="sm" />
-                    <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
-                  </div>
-                ) : null
-              )}
+    <div className="w-full max-w-2xl mt-8">
+      <p className="text-xs text-nom8-text-muted uppercase tracking-widest text-center mb-3">Counter tier list</p>
+      <div className="space-y-1.5">
+        {tiers.map(({ label, style, items }) => (
+          <div key={label} className={`flex items-center gap-3 rounded-xl border bg-nom8-card px-3 py-2 ${style}`}>
+            <span className="text-lg font-black w-5 text-center shrink-0">{label}</span>
+            <div className="w-px h-6 bg-current opacity-20 shrink-0" />
+            <div className="flex flex-wrap gap-1">
+              {items.map((e) => (
+                <Link key={e.slug} href={`/profile/${e.slug}`} title={e.hero!.name} className="hover:scale-110 transition-transform">
+                  <HeroIcon hero={e.hero!} size="sm" />
+                </Link>
+              ))}
             </div>
           </div>
         ))}
@@ -185,54 +194,94 @@ export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameP
             See my results →
           </Link>
         </div>
-        {globalStats && <GlobalStatsWidget stats={globalStats} />}
+        {globalStats?.allCounterScores && (
+          <TierList scores={globalStats.allCounterScores} heroes={heroes} />
+        )}
       </div>
     );
   }
 
+  // Voting phase — battle UI
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-56px)]">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-nom8-text mb-1">Counterwatch</h1>
-          <p className="text-xs text-nom8-text-muted uppercase tracking-widest">{optionIndex + 1} of {matchup.options.length}</p>
+          <p className="text-xs text-nom8-text-muted uppercase tracking-widest">
+            {optionIndex + 1} of {matchup.options.length}
+          </p>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-nom8-card rounded-2xl border border-white/5 p-8 flex flex-col items-center gap-4">
-            <p className="text-xs text-nom8-text-muted uppercase tracking-widest self-start">Target</p>
+
+        {/* Battle */}
+        <div className="flex items-stretch gap-3">
+          {/* Left: target hero — click = target wins (countered) */}
+          <button
+            onClick={() => handleVote("countered")}
+            disabled={voting}
+            className="flex-1 bg-nom8-card rounded-2xl border border-white/5 hover:border-nom8-orange/50 hover:bg-nom8-orange/5 p-8 flex flex-col items-center gap-4 transition-all disabled:opacity-50 cursor-pointer group"
+          >
+            <p className="text-xs text-nom8-text-muted uppercase tracking-widest">Click if wins</p>
             <HeroIcon hero={matchup.target} size="xl" />
             <div className="text-center">
-              <p className="text-xl font-bold text-nom8-text">{matchup.target.name}</p>
-              <div className="flex justify-center mt-1"><RoleBadge role={matchup.target.role} /></div>
+              <p className="text-xl font-bold text-nom8-text group-hover:text-nom8-orange transition-colors">
+                {matchup.target.name}
+              </p>
+              <div className="flex justify-center mt-1">
+                <RoleBadge role={matchup.target.role} />
+              </div>
             </div>
+          </button>
+
+          {/* Middle: VS label + draw button */}
+          <div className="flex flex-col items-center justify-center gap-2 shrink-0 w-12">
+            <span className="text-xs text-nom8-text-muted font-bold uppercase">VS</span>
+            <button
+              onClick={() => handleVote("neutral")}
+              disabled={voting}
+              className="w-10 h-10 rounded-full border border-white/20 bg-white/5 hover:bg-white/15 hover:border-white/40 text-nom8-text-muted hover:text-nom8-text text-base font-bold transition-all disabled:opacity-50 flex items-center justify-center"
+              title="Even matchup / Draw"
+            >
+              =
+            </button>
+            <span className="text-[10px] text-nom8-text-muted">draw</span>
           </div>
-          <div className="bg-nom8-card rounded-2xl border border-white/10 p-6 flex flex-col items-center gap-3">
-            <p className="text-xs text-nom8-text-muted uppercase tracking-widest self-start">vs</p>
+
+          {/* Right: option hero — click = option wins (counters) */}
+          <button
+            onClick={() => handleVote("counters")}
+            disabled={voting}
+            className="flex-1 bg-nom8-card rounded-2xl border border-white/5 hover:border-nom8-orange/50 hover:bg-nom8-orange/5 p-8 flex flex-col items-center gap-4 transition-all disabled:opacity-50 cursor-pointer group"
+          >
+            <p className="text-xs text-nom8-text-muted uppercase tracking-widest">Click if wins</p>
             <HeroIcon hero={currentOption} size="xl" />
             <div className="text-center">
-              <p className="text-xl font-bold text-nom8-text">{currentOption.name}</p>
-              <div className="flex justify-center mt-1"><RoleBadge role={currentOption.role} /></div>
+              <p className="text-xl font-bold text-nom8-text group-hover:text-nom8-orange transition-colors">
+                {currentOption.name}
+              </p>
+              <div className="flex justify-center mt-1">
+                <RoleBadge role={currentOption.role} />
+              </div>
             </div>
-            <div className="w-full space-y-2 mt-1">
-              <button onClick={() => handleVote("counters")} disabled={voting} className="w-full py-2.5 px-3 rounded-lg border border-verdict-counter/30 bg-verdict-counter/10 text-verdict-counter hover:bg-verdict-counter/20 font-medium text-sm transition-all disabled:opacity-50">
-                {currentOption.name} Counters {matchup.target.name}
-              </button>
-              <button onClick={() => handleVote("neutral")} disabled={voting} className="w-full py-2.5 px-3 rounded-lg border border-white/10 bg-white/5 text-nom8-text-muted hover:bg-white/10 font-medium text-sm transition-all disabled:opacity-50">
-                Even matchup
-              </button>
-              <button onClick={() => handleVote("countered")} disabled={voting} className="w-full py-2.5 px-3 rounded-lg border border-verdict-countered/30 bg-verdict-countered/10 text-verdict-countered hover:bg-verdict-countered/20 font-medium text-sm transition-all disabled:opacity-50">
-                {matchup.target.name} Counters {currentOption.name}
-              </button>
-            </div>
-          </div>
+          </button>
         </div>
+
+        {/* Progress dots */}
         <div className="flex justify-center gap-2 mt-5">
           {matchup.options.map((_, i) => (
-            <div key={i} className={`w-2 h-2 rounded-full transition-colors ${i < optionIndex ? "bg-nom8-orange" : i === optionIndex ? "bg-nom8-orange/50" : "bg-white/10"}`} />
+            <div
+              key={i}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                i < optionIndex ? "bg-nom8-orange" : i === optionIndex ? "bg-nom8-orange/50" : "bg-white/10"
+              }`}
+            />
           ))}
         </div>
       </div>
-      {globalStats && <GlobalStatsWidget stats={globalStats} />}
+
+      {/* Tier list */}
+      {globalStats?.allCounterScores && (
+        <TierList scores={globalStats.allCounterScores} heroes={heroes} />
+      )}
     </div>
   );
 }

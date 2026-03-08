@@ -8,7 +8,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "nom8 — Best Counterwatch App",
+  title: "nom8 — Community Driven Counter for Overwatch",
   description:
     "Crowd-powered Overwatch counter-picks. Vote on matchups, find your counters, and get smart hero recommendations.",
   icons: {

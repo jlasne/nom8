@@ -44,7 +44,6 @@ export default function ProfileContent({
 }: ProfileContentProps) {
   const [favorites, setFavorites] = useState<string[]>(initialFavorites);
   const [mainsInsights, setMainsInsights] = useState<Record<string, MainInsight>>({});
-  const [analysisOpen, setAnalysisOpen] = useState(false);
   const [targetScores, setTargetScores] = useState<Record<string, number>>({});
   const router = useRouter();
   const heroMap = Object.fromEntries(heroes.map((h) => [h.slug, h]));
@@ -161,7 +160,7 @@ export default function ProfileContent({
         </div>
       )}
 
-      {/* Mains Counter Insights — aggregated across all mains */}
+      {/* Mains Analysis — merged counter insights + subrole analysis */}
       {favoriteHeroes.length > 0 && (() => {
         const allLoaded = favoriteHeroes.every((h) => mainsInsights[h.slug]);
         const aggCountersMe: Record<string, number> = {};
@@ -169,124 +168,92 @@ export default function ProfileContent({
         if (allLoaded) {
           favoriteHeroes.forEach((hero) => {
             const insight = mainsInsights[hero.slug];
-            insight.countersMe.forEach((e) => {
-              aggCountersMe[e.slug] = (aggCountersMe[e.slug] || 0) + e.score;
-            });
-            insight.iCounter.forEach((e) => {
-              aggICounter[e.slug] = (aggICounter[e.slug] || 0) + e.score;
-            });
+            insight.countersMe.forEach((e) => { aggCountersMe[e.slug] = (aggCountersMe[e.slug] || 0) + e.score; });
+            insight.iCounter.forEach((e) => { aggICounter[e.slug] = (aggICounter[e.slug] || 0) + e.score; });
           });
         }
-        const topCounteredBy = Object.entries(aggCountersMe)
-          .sort(([, a], [, b]) => b - a)
-          .slice(0, 3)
-          .map(([slug, score]) => ({ slug, score, hero: heroMap[slug] }));
-        const topICounter = Object.entries(aggICounter)
-          .sort(([, a], [, b]) => b - a)
-          .slice(0, 3)
-          .map(([slug, score]) => ({ slug, score, hero: heroMap[slug] }));
+        const topCounteredBy = Object.entries(aggCountersMe).sort(([, a], [, b]) => b - a).slice(0, 3).map(([slug, score]) => ({ slug, score, hero: heroMap[slug] }));
+        const topICounter = Object.entries(aggICounter).sort(([, a], [, b]) => b - a).slice(0, 3).map(([slug, score]) => ({ slug, score, hero: heroMap[slug] }));
+
+        const favSet = new Set(favorites);
+        const favSubroles = new Set(favoriteHeroes.map((h) => h.subrole));
+        const roleCount: Record<HeroRole, number> = { Tank: 0, Damage: 0, Support: 0 };
+        favoriteHeroes.forEach((h) => { roleCount[h.role] = (roleCount[h.role] || 0) + 1; });
+
+        const getSuggestion = (subrole: string): Hero | null => {
+          const candidates = heroes.filter((h) => h.subrole === subrole && !favSet.has(h.slug));
+          if (candidates.length === 0) return null;
+          return candidates.sort((a, b) => (targetScores[a.slug] || 0) - (targetScores[b.slug] || 0))[0];
+        };
 
         return (
-          <div className="mb-8">
-            <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-3">
-              Mains Counter Insights
-            </p>
-            {!allLoaded ? (
-              <p className="text-xs text-nom8-text-muted">Loading...</p>
-            ) : (
-              <div className="bg-nom8-card rounded-xl border border-white/5 p-4">
+          <div className="mb-8 space-y-3">
+            <p className="text-xs text-nom8-text-muted uppercase tracking-wider">Mains Analysis</p>
+
+            {/* Counter insights */}
+            <div className="bg-nom8-card rounded-xl border border-white/5 p-4">
+              {!allLoaded ? (
+                <p className="text-xs text-nom8-text-muted">Loading...</p>
+              ) : (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2">
-                      Your mains get countered by
-                    </p>
+                    <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2">Your mains get countered by</p>
                     <div className="space-y-1">
-                      {topCounteredBy.length === 0 && (
-                        <p className="text-xs text-nom8-text-muted">No data yet</p>
-                      )}
-                      {topCounteredBy.map((e, i) =>
-                        e.hero ? (
-                          <Link
-                            key={e.slug}
-                            href={`/profile/${e.slug}`}
-                            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
-                          >
-                            <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
-                            <HeroIcon hero={e.hero} size="sm" />
-                            <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
-                            <span className="text-xs text-nom8-text-muted font-mono">{e.score}</span>
-                          </Link>
-                        ) : null
-                      )}
+                      {topCounteredBy.length === 0 && <p className="text-xs text-nom8-text-muted">No data yet</p>}
+                      {topCounteredBy.map((e, i) => e.hero ? (
+                        <Link key={e.slug} href={`/profile/${e.slug}`} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors">
+                          <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
+                          <HeroIcon hero={e.hero} size="sm" />
+                          <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
+                          <span className="text-xs text-nom8-text-muted font-mono">{e.score}</span>
+                        </Link>
+                      ) : null)}
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2">
-                      Your mains counter best
-                    </p>
+                    <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2">Your mains counter best</p>
                     <div className="space-y-1">
-                      {topICounter.length === 0 && (
-                        <p className="text-xs text-nom8-text-muted">No data yet</p>
-                      )}
-                      {topICounter.map((e, i) =>
-                        e.hero ? (
-                          <Link
-                            key={e.slug}
-                            href={`/profile/${e.slug}`}
-                            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
-                          >
-                            <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
-                            <HeroIcon hero={e.hero} size="sm" />
-                            <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
-                            <span className="text-xs text-nom8-text-muted font-mono">{e.score}</span>
-                          </Link>
-                        ) : null
-                      )}
+                      {topICounter.length === 0 && <p className="text-xs text-nom8-text-muted">No data yet</p>}
+                      {topICounter.map((e, i) => e.hero ? (
+                        <Link key={e.slug} href={`/profile/${e.slug}`} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors">
+                          <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
+                          <HeroIcon hero={e.hero} size="sm" />
+                          <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
+                          <span className="text-xs text-nom8-text-muted font-mono">{e.score}</span>
+                        </Link>
+                      ) : null)}
                     </div>
                   </div>
                 </div>
+              )}
+            </div>
+
+            {/* General role balance */}
+            <div className="bg-nom8-card rounded-xl border border-white/5 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider mb-3 text-nom8-text-muted">Role balance</p>
+              <div className="grid grid-cols-3 gap-3 mb-2">
+                {(["Tank", "Damage", "Support"] as HeroRole[]).map((role) => (
+                  <div key={role} className="text-center">
+                    <p className={`text-xl font-bold ${ROLE_COLORS[role]}`}>{roleCount[role]}</p>
+                    <p className="text-xs text-nom8-text-muted">{role}</p>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
-        );
-      })()}
+              <p className="text-xs text-nom8-text-muted">
+                {roleCount.Tank === 0 ? "No Tank main. " : ""}
+                {roleCount.Damage === 0 ? "No Damage main. " : ""}
+                {roleCount.Support === 0 ? "No Support main. " : ""}
+                {roleCount.Tank > 0 && roleCount.Damage > 0 && roleCount.Support > 0 ? "Good coverage across all three roles." : "Consider adding mains in missing roles."}
+              </p>
+            </div>
 
-      {/* Mains Analysis — collapsible */}
-      {favoriteHeroes.length > 0 && (
-        <div className="mb-8">
-          <button
-            onClick={() => setAnalysisOpen((v) => !v)}
-            className="flex items-center justify-between w-full text-left mb-3 group"
-          >
-            <p className="text-xs text-nom8-text-muted uppercase tracking-wider group-hover:text-nom8-text transition-colors">
-              Mains Analysis
-            </p>
-            <span className={`text-nom8-text-muted text-xs transition-transform ${analysisOpen ? "rotate-180" : ""}`}>▼</span>
-          </button>
-
-          {analysisOpen && (() => {
-            const favSet = new Set(favorites);
-            const favSubroles = new Set(favoriteHeroes.map((h) => h.subrole));
-            const roleCount: Record<HeroRole, number> = { Tank: 0, Damage: 0, Support: 0 };
-            favoriteHeroes.forEach((h) => { roleCount[h.role] = (roleCount[h.role] || 0) + 1; });
-
-            const getSuggestion = (subrole: string): Hero | null => {
-              const candidates = heroes.filter(
-                (h) => h.subrole === subrole && !favSet.has(h.slug)
-              );
-              if (candidates.length === 0) return null;
-              // Least countered = lowest target score = safest pick
-              return candidates.sort(
-                (a, b) => (targetScores[a.slug] || 0) - (targetScores[b.slug] || 0)
-              )[0];
-            };
-
-            const RoleSection = ({ role }: { role: HeroRole }) => {
+            {/* Per-role subrole coverage */}
+            {(["Tank", "Damage", "Support"] as HeroRole[]).map((role) => {
               const mains = favoriteHeroes.filter((h) => h.role === role);
               const covered = SUBROLES_BY_ROLE[role].filter((sr) => favSubroles.has(sr as Hero["subrole"]));
               const missing = SUBROLES_BY_ROLE[role].filter((sr) => !favSubroles.has(sr as Hero["subrole"]));
               return (
-                <div className="bg-nom8-card rounded-xl border border-white/5 p-4">
+                <div key={role} className="bg-nom8-card rounded-xl border border-white/5 p-4">
                   <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${ROLE_COLORS[role]}`}>{role}</p>
                   {mains.length === 0 ? (
                     <p className="text-xs text-nom8-text-muted">No {role} mains set.</p>
@@ -300,70 +267,36 @@ export default function ProfileContent({
                       ))}
                     </div>
                   )}
-                  {covered.length > 0 && (
-                    <div className="mb-2">
-                      <p className="text-xs text-nom8-text-muted mb-1">Covered subroles</p>
+                  <div className="space-y-2">
+                    {covered.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {covered.map((sr) => (
                           <span key={sr} className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-400">{sr}</span>
                         ))}
                       </div>
-                    </div>
-                  )}
-                  {missing.length > 0 && (
-                    <div>
-                      <p className="text-xs text-nom8-text-muted mb-1">Missing subroles</p>
-                      <div className="space-y-1.5">
-                        {missing.map((sr) => {
-                          const suggestion = getSuggestion(sr);
-                          return (
-                            <div key={sr} className="flex items-center gap-2">
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-nom8-text-muted shrink-0">{sr}</span>
-                              {suggestion && (
-                                <Link href={`/profile/${suggestion.slug}`} className="flex items-center gap-1.5 hover:bg-white/5 rounded-lg px-1.5 py-0.5 transition-colors">
-                                  <HeroIcon hero={suggestion} size="sm" />
-                                  <span className="text-xs text-nom8-orange">{suggestion.name}</span>
-                                  <span className="text-xs text-nom8-text-muted">suggested</span>
-                                </Link>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                    )}
+                    {missing.map((sr) => {
+                      const suggestion = getSuggestion(sr);
+                      return (
+                        <div key={sr} className="flex items-center gap-2">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-nom8-text-muted shrink-0">{sr}</span>
+                          {suggestion && (
+                            <Link href={`/profile/${suggestion.slug}`} className="flex items-center gap-1.5 hover:bg-white/5 rounded-lg px-1.5 py-0.5 transition-colors">
+                              <HeroIcon hero={suggestion} size="sm" />
+                              <span className="text-xs text-nom8-orange">{suggestion.name}</span>
+                              <span className="text-xs text-nom8-text-muted">suggested</span>
+                            </Link>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
-            };
-
-            return (
-              <div className="space-y-3">
-                {/* Mixed / General */}
-                <div className="bg-nom8-card rounded-xl border border-white/5 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-3 text-nom8-text-muted">General</p>
-                  <div className="grid grid-cols-3 gap-3 mb-3">
-                    {(["Tank", "Damage", "Support"] as HeroRole[]).map((role) => (
-                      <div key={role} className="text-center">
-                        <p className={`text-lg font-bold ${ROLE_COLORS[role]}`}>{roleCount[role]}</p>
-                        <p className="text-xs text-nom8-text-muted">{role}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-nom8-text-muted">
-                    {roleCount.Tank === 0 ? "No Tank main — consider adding one. " : ""}
-                    {roleCount.Damage === 0 ? "No Damage main — consider adding one. " : ""}
-                    {roleCount.Support === 0 ? "No Support main — consider adding one. " : ""}
-                    {roleCount.Tank > 0 && roleCount.Damage > 0 && roleCount.Support > 0 ? "Good role coverage across all three roles." : ""}
-                  </p>
-                </div>
-                {(["Tank", "Damage", "Support"] as HeroRole[]).map((role) => (
-                  <RoleSection key={role} role={role} />
-                ))}
-              </div>
-            );
-          })()}
-        </div>
-      )}
+            })}
+          </div>
+        );
+      })()}
 
       {/* All heroes */}
       <HeroGrid
