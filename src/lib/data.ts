@@ -128,8 +128,8 @@ export async function getCounterMatrix(): Promise<Record<string, Record<string, 
 // ── Global stats ──
 
 export async function getGlobalStats(): Promise<{
-  bestCounters: { slug: string; totalScore: number }[];
-  mostCountered: { slug: string; totalScore: number }[];
+  counterTotals: Record<string, number>;
+  targetTotals: Record<string, number>;
 }> {
   const { data, error } = await adminClient
     .from("counter_matrix")
@@ -148,17 +148,7 @@ export async function getGlobalStats(): Promise<{
     targetTotals[t] = (targetTotals[t] || 0) + s;
   }
 
-  const bestCounters = Object.entries(counterTotals)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 3)
-    .map(([slug, totalScore]) => ({ slug, totalScore }));
-
-  const mostCountered = Object.entries(targetTotals)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 3)
-    .map(([slug, totalScore]) => ({ slug, totalScore }));
-
-  return { bestCounters, mostCountered };
+  return { counterTotals, targetTotals };
 }
 
 // ── Favorites (used by API routes with user-scoped client) ──

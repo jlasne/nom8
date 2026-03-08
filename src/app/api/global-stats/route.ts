@@ -1,18 +1,41 @@
 import { NextResponse } from "next/server";
 import { getGlobalStats, getHeroes } from "@/lib/data";
+import type { HeroRole } from "@/types/hero";
+
+const ROLES: HeroRole[] = ["Tank", "Damage", "Support"];
 
 export async function GET() {
   const [stats, heroes] = await Promise.all([getGlobalStats(), getHeroes()]);
   const heroMap = Object.fromEntries(heroes.map((h) => [h.slug, h]));
+  const { counterTotals, targetTotals } = stats;
 
-  return NextResponse.json({
-    bestCounters: stats.bestCounters.map((e) => ({
-      ...e,
-      hero: heroMap[e.slug] ?? null,
-    })),
-    mostCountered: stats.mostCountered.map((e) => ({
-      ...e,
-      hero: heroMap[e.slug] ?? null,
-    })),
-  });
+  // Top 3 per role by counter total
+  const byRole = Object.fromEntries(
+    ROLES.map((role) => {
+      const top = Object.entries(counterTotals)
+        .filter(([slug]) => heroMap[slug]?.role === role)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([slug, totalScore]) => ({ slug, totalScore, hero: heroMap[slug] ?? null }));
+      return [role, top];
+    })
+  );
+
+  // Legacy overall top 3 (kept for backwards compat)
+  const bestCounters = Object.entries(counterTotals)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3)
+    .map(([slug, totalScore]) => ({ slug, totalScore, hero: heroMap[slug] ?? null }));
+
+  const mostCountered = Object.entries(targetTotals)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3)
+    .map(([slug, totalScore]) => ({ slug, totalScore, hero: heroMap[slug] ?? null }));
+
+  // All target scores for subrole suggestion in profile
+  const allTargetScores = Object.fromEntries(
+    Object.entries(targetTotals).map(([slug, score]) => [slug, score])
+  );
+
+  return NextResponse.json({ byRole, bestCounters, mostCountered, allTargetScores });
 }

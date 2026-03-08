@@ -8,9 +8,12 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "nom8 — Win more games by always locking the right hero",
+  title: "nom8 — Best Counterwatch App",
   description:
     "Crowd-powered Overwatch counter-picks. Vote on matchups, find your counters, and get smart hero recommendations.",
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+  },
 };
 
 export default async function RootLayout({

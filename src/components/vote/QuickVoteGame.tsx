@@ -26,43 +26,39 @@ interface GlobalStatsEntry {
 }
 
 interface GlobalStats {
+  byRole: Record<string, GlobalStatsEntry[]>;
   bestCounters: GlobalStatsEntry[];
   mostCountered: GlobalStatsEntry[];
 }
 
+const ROLE_COLORS: Record<string, string> = {
+  Tank: "text-blue-400",
+  Damage: "text-red-400",
+  Support: "text-green-400",
+};
+
 function GlobalStatsWidget({ stats }: { stats: GlobalStats }) {
+  const roles = ["Tank", "Damage", "Support"] as const;
   return (
     <div className="w-full max-w-2xl mt-6">
-      <p className="text-xs text-nom8-text-muted uppercase tracking-widest text-center mb-3">Global Rankings</p>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-nom8-card rounded-xl border border-white/5 p-3">
-          <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2 text-center">Best counters</p>
-          <div className="space-y-1.5">
-            {stats.bestCounters.map((e, i) =>
-              e.hero ? (
-                <div key={e.slug} className="flex items-center gap-2">
-                  <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
-                  <HeroIcon hero={e.hero} size="sm" />
-                  <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
-                </div>
-              ) : null
-            )}
+      <p className="text-xs text-nom8-text-muted uppercase tracking-widest text-center mb-3">Best counters by role</p>
+      <div className="grid grid-cols-3 gap-2">
+        {roles.map((role) => (
+          <div key={role} className="bg-nom8-card rounded-xl border border-white/5 p-3">
+            <p className={`text-xs font-semibold uppercase tracking-wider mb-2 text-center ${ROLE_COLORS[role]}`}>{role}</p>
+            <div className="space-y-1.5">
+              {(stats.byRole?.[role] ?? []).map((e, i) =>
+                e.hero ? (
+                  <div key={e.slug} className="flex items-center gap-1.5">
+                    <span className="text-nom8-orange font-bold text-xs w-4">#{i + 1}</span>
+                    <HeroIcon hero={e.hero} size="sm" />
+                    <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
+                  </div>
+                ) : null
+              )}
+            </div>
           </div>
-        </div>
-        <div className="bg-nom8-card rounded-xl border border-white/5 p-3">
-          <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2 text-center">Most countered</p>
-          <div className="space-y-1.5">
-            {stats.mostCountered.map((e, i) =>
-              e.hero ? (
-                <div key={e.slug} className="flex items-center gap-2">
-                  <span className="text-role-damage font-bold text-xs w-4">#{i + 1}</span>
-                  <HeroIcon hero={e.hero} size="sm" />
-                  <span className="text-nom8-text text-xs flex-1 truncate">{e.hero.name}</span>
-                </div>
-              ) : null
-            )}
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
