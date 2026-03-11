@@ -45,6 +45,7 @@ export default function ProfileContent({
   const [favorites, setFavorites] = useState<string[]>(initialFavorites);
   const [mainsInsights, setMainsInsights] = useState<Record<string, MainInsight>>({});
   const [targetScores, setTargetScores] = useState<Record<string, number>>({});
+  const [analysisOpen, setAnalysisOpen] = useState(false);
   const router = useRouter();
   const heroMap = Object.fromEntries(heroes.map((h) => [h.slug, h]));
 
@@ -160,8 +161,19 @@ export default function ProfileContent({
         </div>
       )}
 
+      {/* Mains Analysis toggle */}
+      {favoriteHeroes.length > 0 && (
+        <button
+          onClick={() => setAnalysisOpen((o) => !o)}
+          className="w-full flex items-center justify-between py-2 px-3 rounded-xl border border-white/5 bg-white/3 hover:bg-white/5 transition-colors mb-4"
+        >
+          <span className="text-xs text-nom8-text-muted uppercase tracking-wider">Mains Analysis</span>
+          <span className="text-nom8-text-muted text-xs">{analysisOpen ? "▲" : "▼"}</span>
+        </button>
+      )}
+
       {/* Mains Analysis — merged counter insights + subrole analysis */}
-      {favoriteHeroes.length > 0 && (() => {
+      {analysisOpen && favoriteHeroes.length > 0 && (() => {
         const allLoaded = favoriteHeroes.every((h) => mainsInsights[h.slug]);
         const aggCountersMe: Record<string, number> = {};
         const aggICounter: Record<string, number> = {};
@@ -299,6 +311,7 @@ export default function ProfileContent({
       })()}
 
       {/* All heroes */}
+
       <HeroGrid
         heroes={heroes}
         onSelect={handleHeroClick}
