@@ -134,7 +134,7 @@ export default function ProfileContent({
           <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-3">
             Your Mains
           </p>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
             {favoriteHeroes.map((hero) => (
               <div key={hero.slug} className="relative">
                 <button
@@ -207,7 +207,7 @@ export default function ProfileContent({
               {!allLoaded ? (
                 <p className="text-xs text-nom8-text-muted">Loading...</p>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-nom8-text-muted uppercase tracking-wider mb-2">Your mains get countered by</p>
                     <div className="space-y-1">

@@ -116,7 +116,7 @@ export default function TeamBuilder({
       <h3 className="text-lg font-bold text-nom8-text mb-1">{title}</h3>
       <p className="text-sm text-nom8-text-muted mb-4">{subtitle}</p>
       {horizontal ? (
-        <div className="grid grid-cols-5 gap-3">{slots}</div>
+        <div className="grid grid-cols-5 gap-1 sm:gap-3">{slots}</div>
       ) : (
         <div className="space-y-3">{slots}</div>
       )}

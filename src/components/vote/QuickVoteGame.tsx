@@ -111,11 +111,14 @@ function HeroRoster({ heroes }: { heroes: Hero[] }) {
   const roles: HeroRole[] = ["Tank", "Damage", "Support"];
   return (
     <div className="w-full max-w-4xl mt-8">
-      <div className="flex rounded-xl border border-white/5 bg-nom8-card overflow-hidden">
+      <div className="flex flex-col sm:flex-row rounded-xl border border-white/5 bg-nom8-card overflow-hidden">
         {roles.map((role, idx) => {
           const roleHeroes = heroes.filter((h) => h.role === role);
           return (
-            <div key={role} className={`flex-1 p-3 ${idx < 2 ? "border-r border-white/5" : ""}`}>
+            <div
+              key={role}
+              className={`flex-1 p-3 ${idx < 2 ? "border-b sm:border-b-0 sm:border-r border-white/5" : ""}`}
+            >
               <div className="flex items-center gap-1.5 mb-2.5">
                 <span className={`text-sm ${ROLE_LABEL_COLORS[role]}`}>{ROLE_ICONS[role]}</span>
                 <p className={`text-xs font-bold tracking-widest uppercase ${ROLE_LABEL_COLORS[role]}`}>{role}</p>
@@ -277,12 +280,12 @@ export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameP
         </div>
 
         {/* Battle */}
-        <div className="flex items-stretch gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch gap-3">
           {/* Left: target hero — click = target wins (countered) */}
           <button
             onClick={() => handleVote("countered")}
             disabled={voting}
-            className="flex-1 bg-nom8-card rounded-2xl border border-white/5 hover:border-nom8-orange/50 hover:bg-nom8-orange/5 p-8 flex flex-col items-center gap-4 transition-all disabled:opacity-50 cursor-pointer group"
+            className="flex-1 bg-nom8-card rounded-2xl border border-white/5 hover:border-nom8-orange/50 hover:bg-nom8-orange/5 p-5 sm:p-8 flex flex-col items-center gap-4 transition-all disabled:opacity-50 cursor-pointer group"
           >
             <p className="text-xs text-nom8-text-muted uppercase tracking-widest">Click if wins</p>
             <HeroIcon hero={matchup.target} size="xl" />
@@ -296,8 +299,8 @@ export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameP
             </div>
           </button>
 
-          {/* Middle: VS label + draw button */}
-          <div className="flex flex-col items-center justify-center gap-2 shrink-0 w-20">
+          {/* Middle: VS label + draw button — row on mobile, column on desktop */}
+          <div className="flex sm:flex-col items-center justify-center gap-3 sm:gap-2 sm:shrink-0 sm:w-20">
             <span className="text-sm text-nom8-text-muted font-bold uppercase tracking-widest">VS</span>
             <button
               onClick={() => handleVote("neutral")}
@@ -314,7 +317,7 @@ export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameP
           <button
             onClick={() => handleVote("counters")}
             disabled={voting}
-            className="flex-1 bg-nom8-card rounded-2xl border border-white/5 hover:border-nom8-orange/50 hover:bg-nom8-orange/5 p-8 flex flex-col items-center gap-4 transition-all disabled:opacity-50 cursor-pointer group"
+            className="flex-1 bg-nom8-card rounded-2xl border border-white/5 hover:border-nom8-orange/50 hover:bg-nom8-orange/5 p-5 sm:p-8 flex flex-col items-center gap-4 transition-all disabled:opacity-50 cursor-pointer group"
           >
             <p className="text-xs text-nom8-text-muted uppercase tracking-widest">Click if wins</p>
             <HeroIcon hero={currentOption} size="xl" />

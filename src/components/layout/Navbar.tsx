@@ -39,9 +39,27 @@ export default function Navbar({ isLoggedIn: initialIsLoggedIn }: { isLoggedIn: 
 
   const links = isLoggedIn ? authLinks : publicLinks;
 
+  const navLinks = links.map((link) => {
+    const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+    return (
+      <Link
+        key={link.href}
+        href={link.href}
+        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+          isActive
+            ? "text-nom8-orange bg-nom8-orange/10"
+            : "text-nom8-text-muted hover:text-nom8-text hover:bg-white/5"
+        }`}
+      >
+        {link.label}
+      </Link>
+    );
+  });
+
   return (
     <nav className="border-b border-white/5 bg-nom8-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Main row */}
         <div className="relative flex items-center h-14">
           {/* Logo */}
           <Link href="/" className="flex items-center" aria-label="nom8 home">
@@ -57,27 +75,9 @@ export default function Navbar({ isLoggedIn: initialIsLoggedIn }: { isLoggedIn: 
             </svg>
           </Link>
 
-          {/* Nav links — centered */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1">
-            {links.map((link) => {
-              const isActive =
-                link.href === "/"
-                  ? pathname === "/"
-                  : pathname.startsWith(link.href);
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? "text-nom8-orange bg-nom8-orange/10"
-                      : "text-nom8-text-muted hover:text-nom8-text hover:bg-white/5"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
+          {/* Nav links — centered on md+ */}
+          <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-1">
+            {navLinks}
           </div>
 
           {/* Right side */}
@@ -100,6 +100,13 @@ export default function Navbar({ isLoggedIn: initialIsLoggedIn }: { isLoggedIn: 
             )}
           </div>
         </div>
+
+        {/* Mobile nav row — shown below header on small screens */}
+        {links.length > 1 && (
+          <div className="flex md:hidden items-center gap-1 pb-2">
+            {navLinks}
+          </div>
+        )}
       </div>
     </nav>
   );
