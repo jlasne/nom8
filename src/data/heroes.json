@@ -1,5 +1,15 @@
 [
   {
+    "name": "Ramattra",
+    "slug": "ramattra",
+    "role": "Tank",
+    "subrole": "Bruiser",
+    "isAerial": false,
+    "canShootAerial": true,
+    "hasShield": true,
+    "imageUrl": "https://d15f34w2p8l1cc.cloudfront.net/overwatch/ddef7c9fb8ce4256e8508196b486f81950efe7aaa6cf27fec4668beb4cd15774.png"
+  },
+  {
     "name": "Doomfist",
     "slug": "doomfist",
     "role": "Tank",
