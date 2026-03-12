@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import type { Hero } from "@/types/hero";
+import type { Hero, HeroRole } from "@/types/hero";
 import HeroIcon from "@/components/hero/HeroIcon";
 import RoleBadge from "@/components/hero/RoleBadge";
 
@@ -95,6 +95,41 @@ function TierList({ scores, heroes }: { scores: Record<string, number>; heroes: 
           </div>
         ))}
         {tiers.length === 0 && <p className="text-xs text-nom8-text-muted text-center py-4">No data yet</p>}
+      </div>
+    </div>
+  );
+}
+
+const ROLE_ICONS: Record<HeroRole, string> = { Tank: "⬡", Damage: "✦", Support: "✚" };
+const ROLE_LABEL_COLORS: Record<HeroRole, string> = {
+  Tank: "text-blue-400",
+  Damage: "text-red-400",
+  Support: "text-green-400",
+};
+
+function HeroRoster({ heroes }: { heroes: Hero[] }) {
+  const roles: HeroRole[] = ["Tank", "Damage", "Support"];
+  return (
+    <div className="w-full max-w-4xl mt-8">
+      <div className="flex rounded-xl border border-white/5 bg-nom8-card overflow-hidden">
+        {roles.map((role, idx) => {
+          const roleHeroes = heroes.filter((h) => h.role === role);
+          return (
+            <div key={role} className={`flex-1 p-3 ${idx < 2 ? "border-r border-white/5" : ""}`}>
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <span className={`text-sm ${ROLE_LABEL_COLORS[role]}`}>{ROLE_ICONS[role]}</span>
+                <p className={`text-xs font-bold tracking-widest uppercase ${ROLE_LABEL_COLORS[role]}`}>{role}</p>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {roleHeroes.map((hero) => (
+                  <Link key={hero.slug} href={`/profile/${hero.slug}`} title={hero.name} className="hover:scale-110 transition-transform">
+                    <HeroIcon hero={hero} size="sm" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -221,6 +256,7 @@ export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameP
             See my results →
           </Link>
         </div>
+        <HeroRoster heroes={heroes} />
         {globalStats?.allCounterScores && (
           <TierList scores={globalStats.allCounterScores} heroes={heroes} />
         )}
@@ -261,17 +297,17 @@ export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameP
           </button>
 
           {/* Middle: VS label + draw button */}
-          <div className="flex flex-col items-center justify-center gap-2 shrink-0 w-12">
-            <span className="text-xs text-nom8-text-muted font-bold uppercase">VS</span>
+          <div className="flex flex-col items-center justify-center gap-2 shrink-0 w-20">
+            <span className="text-sm text-nom8-text-muted font-bold uppercase tracking-widest">VS</span>
             <button
               onClick={() => handleVote("neutral")}
               disabled={voting}
-              className="w-10 h-10 rounded-full border border-white/20 bg-white/5 hover:bg-white/15 hover:border-white/40 text-nom8-text-muted hover:text-nom8-text text-base font-bold transition-all disabled:opacity-50 flex items-center justify-center"
+              className="w-16 h-16 rounded-full border-2 border-white/25 bg-white/5 hover:bg-white/15 hover:border-white/50 text-nom8-text-muted hover:text-nom8-text text-2xl font-bold transition-all disabled:opacity-50 flex items-center justify-center"
               title="Even matchup / Draw"
             >
               =
             </button>
-            <span className="text-[10px] text-nom8-text-muted">draw</span>
+            <span className="text-xs text-nom8-text-muted font-medium">draw</span>
           </div>
 
           {/* Right: option hero — click = option wins (counters) */}
@@ -305,6 +341,8 @@ export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameP
           ))}
         </div>
       </div>
+
+      <HeroRoster heroes={heroes} />
 
       {/* Tier list */}
       {globalStats?.allCounterScores && (
