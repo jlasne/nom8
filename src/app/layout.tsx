@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
 import { getCurrentUser } from "@/lib/auth";
@@ -39,6 +40,11 @@ export default async function RootLayout({
             </div>
           </div>
         </footer>
+      <Script
+        src="https://onedollarfeedback.com/script.js"
+        data-token="T9wjXzY3HubNVEEppnieuyc6TMbrVTvb"
+        strategy="afterInteractive"
+      />
       </body>
     </html>
   );
