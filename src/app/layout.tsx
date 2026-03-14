@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import Script from "next/script";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
-import { getCurrentUser } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { getGlobalStats } from "@/lib/data";
 import "./globals.css";
 
@@ -23,8 +23,8 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [user, stats] = await Promise.all([
-    getCurrentUser(),
+  const [session, stats] = await Promise.all([
+    getSession(),
     getGlobalStats().catch(() => ({ counterTotals: {}, targetTotals: {} })),
   ]);
   const voteCount = Object.values(stats.counterTotals).reduce((sum, v) => sum + v, 0);
@@ -32,7 +32,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Navbar isLoggedIn={!!user} initialVoteCount={voteCount} />
+        <Navbar isLoggedIn={!!session} initialVoteCount={voteCount} />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {children}
         </main>

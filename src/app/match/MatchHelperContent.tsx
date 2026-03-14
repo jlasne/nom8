@@ -1,63 +1,36 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useMemo } from "react";
 import type { Hero } from "@/types/hero";
 import type { User } from "@/types/user";
 import TeamBuilder from "@/components/match/TeamBuilder";
 import RecommendationPanel from "@/components/match/RecommendationPanel";
-
-interface Recommendation {
-  hero: Hero;
-  compositeScore: number;
-  breakdown: { vsHero: string; score: number }[];
-  isFavorite: boolean;
-}
+import { computeRecommendations } from "@/lib/recommendations";
 
 interface MatchHelperContentProps {
   heroes: Hero[];
   user: User | null;
+  matrix: Record<string, Record<string, number>>;
 }
 
-export default function MatchHelperContent({ heroes, user }: MatchHelperContentProps) {
+export default function MatchHelperContent({ heroes, user, matrix }: MatchHelperContentProps) {
   const [enemyTeam, setEnemyTeam] = useState<(string | null)[]>([
     null, null, null, null, null,
   ]);
-  const [results, setResults] = useState<{
-    tanks: Recommendation[];
-    damage: Recommendation[];
-    support: Recommendation[];
-  } | null>(null);
-  const [loading, setLoading] = useState(false);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const hasEnemies = enemyTeam.some(Boolean);
 
-  useEffect(() => {
-    if (!hasEnemies) {
-      setResults(null);
-      return;
-    }
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/recommend", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ enemyTeam: enemyTeam.filter(Boolean) }),
-        });
-        const data = await res.json();
-        setResults(data);
-      } catch {
-        // silent
-      } finally {
-        setLoading(false);
-      }
-    }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [enemyTeam, hasEnemies]);
+  // Compute recommendations client-side — no API call needed
+  const results = useMemo(() => {
+    if (!hasEnemies) return null;
+    return computeRecommendations(
+      enemyTeam.filter(Boolean) as string[],
+      matrix,
+      heroes,
+      [],
+      user?.favorites || []
+    );
+  }, [enemyTeam, hasEnemies, matrix, heroes, user?.favorites]);
 
   return (
     <div>
@@ -84,7 +57,7 @@ export default function MatchHelperContent({ heroes, user }: MatchHelperContentP
             damage={results?.damage || []}
             support={results?.support || []}
             heroes={heroes}
-            loading={loading}
+            loading={false}
             userFavorites={user?.favorites || []}
           />
         ) : (

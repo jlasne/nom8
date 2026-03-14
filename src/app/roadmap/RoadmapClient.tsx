@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 
 type Status = "suggested" | "planned" | "in_progress" | "done";
 
@@ -29,32 +28,20 @@ const STATUS_COLORS: Record<Status, string> = {
   done: "bg-green-500/20 text-green-400",
 };
 
-export default function RoadmapClient() {
-  const [features, setFeatures] = useState<Feature[]>([]);
-  const [votedIds, setVotedIds] = useState<Set<string>>(new Set());
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loading, setLoading] = useState(true);
+interface RoadmapClientProps {
+  initialFeatures: Feature[];
+  initialVotedIds: string[];
+  isLoggedIn: boolean;
+}
+
+export default function RoadmapClient({ initialFeatures, initialVotedIds, isLoggedIn }: RoadmapClientProps) {
+  const [features, setFeatures] = useState<Feature[]>(initialFeatures);
+  const [votedIds, setVotedIds] = useState<Set<string>>(new Set(initialVotedIds));
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsLoggedIn(!!session);
-    });
-
-    fetch("/api/roadmap")
-      .then((r) => r.json())
-      .then((data) => {
-        setFeatures(data.features || []);
-        setVotedIds(new Set(data.votedIds || []));
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
 
   const handleVote = async (featureId: string) => {
     if (!isLoggedIn) return;
@@ -186,11 +173,7 @@ export default function RoadmapClient() {
         </form>
       )}
 
-      {loading && (
-        <p className="text-nom8-text-muted text-sm text-center py-12">Loading…</p>
-      )}
-
-      {!loading && features.length === 0 && (
+      {features.length === 0 && (
         <div className="text-center py-16 text-nom8-text-muted">
           <p className="text-4xl mb-3">🗺</p>
           <p className="font-semibold text-nom8-text mb-1">No features yet</p>

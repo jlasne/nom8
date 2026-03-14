@@ -1,4 +1,4 @@
-import { getHeroes, getGlobalStats } from "@/lib/data";
+import { getHeroes, getGlobalStats, getTopCountersFor, getTopCounteredBy } from "@/lib/data";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -27,12 +27,30 @@ export default async function ProfilePage({
   if (!user) redirect("/login");
 
   const [heroes, stats] = await Promise.all([getHeroes(), getGlobalStats()]);
+
+  // Pre-compute mains insights server-side (avoids N client-side /api/matrix calls)
+  const heroMap = Object.fromEntries(heroes.map((h) => [h.slug, h]));
+  const insightsEntries = await Promise.all(
+    user.favorites.map(async (slug) => {
+      const [countersMe, iCounter] = await Promise.all([
+        getTopCountersFor(slug, 3),
+        getTopCounteredBy(slug, 3),
+      ]);
+      return [slug, {
+        countersMe: countersMe.map((e) => ({ ...e, hero: heroMap[e.slug] })),
+        iCounter: iCounter.map((e) => ({ ...e, hero: heroMap[e.slug] })),
+      }] as const;
+    })
+  );
+  const initialMainsInsights = Object.fromEntries(insightsEntries);
+
   return (
     <ProfileContent
       heroes={heroes}
       initialFavorites={user.favorites}
       email={user.email}
       initialTargetScores={stats.targetTotals}
+      initialMainsInsights={initialMainsInsights}
     />
   );
 }

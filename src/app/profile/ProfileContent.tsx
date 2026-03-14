@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Hero, HeroRole } from "@/types/hero";
@@ -13,6 +13,7 @@ interface ProfileContentProps {
   initialFavorites: string[];
   email: string;
   initialTargetScores?: Record<string, number>;
+  initialMainsInsights?: Record<string, MainInsight>;
 }
 
 interface CounterEntry {
@@ -43,38 +44,14 @@ export default function ProfileContent({
   initialFavorites,
   email,
   initialTargetScores = {},
+  initialMainsInsights = {},
 }: ProfileContentProps) {
   const [favorites, setFavorites] = useState<string[]>(initialFavorites);
-  const [mainsInsights, setMainsInsights] = useState<Record<string, MainInsight>>({});
+  const [mainsInsights] = useState<Record<string, MainInsight>>(initialMainsInsights);
   const [targetScores] = useState<Record<string, number>>(initialTargetScores);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const router = useRouter();
   const heroMap = Object.fromEntries(heroes.map((h) => [h.slug, h]));
-
-  useEffect(() => {
-    if (favorites.length === 0) return;
-    favorites.forEach((slug) => {
-      setMainsInsights((prev) => {
-        if (prev[slug]) return prev;
-        fetch(`/api/matrix?hero=${slug}`)
-          .then((r) => r.json())
-          .then((data) => {
-            const enrich = (arr: CounterEntry[]) =>
-              arr.map((e) => ({ ...e, hero: heroMap[e.slug] }));
-            setMainsInsights((p) => ({
-              ...p,
-              [slug]: {
-                countersMe: enrich(data.countersMe || []).slice(0, 3),
-                iCounter: enrich(data.iCounter || []).slice(0, 3),
-              },
-            }));
-          })
-          .catch(() => {});
-        return prev;
-      });
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [favorites.join(",")]);
 
   const handleToggleFavorite = useCallback(async (slug: string) => {
     setFavorites((prev) =>
