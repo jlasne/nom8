@@ -11,6 +11,7 @@ type Verdict = "counters" | "neutral" | "countered";
 interface QuickVoteGameProps {
   heroes: Hero[];
   presetHeroSlug?: string;
+  initialGlobalStats?: GlobalStats | null;
 }
 
 interface ResultEntry {
@@ -150,21 +151,14 @@ function pickRandom(heroes: Hero[], presetSlug?: string, maxOptions = 3) {
   return { target: shuffled[0], options: shuffled.slice(1, 1 + maxOptions) };
 }
 
-export default function QuickVoteGame({ heroes, presetHeroSlug }: QuickVoteGameProps) {
+export default function QuickVoteGame({ heroes, presetHeroSlug, initialGlobalStats = null }: QuickVoteGameProps) {
   const [matchup, setMatchup] = useState(() => pickRandom(heroes, presetHeroSlug, 4));
   const [optionIndex, setOptionIndex] = useState(0);
   const [phase, setPhase] = useState<"voting" | "results">("voting");
   const [countersMe, setCountersMe] = useState<ResultEntry[]>([]);
   const [iCounter, setICounter] = useState<ResultEntry[]>([]);
   const [voting, setVoting] = useState(false);
-  const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
-
-  useEffect(() => {
-    fetch("/api/global-stats")
-      .then((r) => r.json())
-      .then((data) => setGlobalStats(data))
-      .catch(() => {});
-  }, []);
+  const [globalStats] = useState<GlobalStats | null>(initialGlobalStats);
 
   const currentOption = matchup.options[optionIndex];
 

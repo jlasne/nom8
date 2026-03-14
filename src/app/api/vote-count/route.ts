@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
-import { adminClient } from "@/lib/supabase/admin";
+import { getGlobalStats } from "@/lib/data";
 
 export async function GET() {
-  const { data, error } = await adminClient
-    .from("counter_matrix")
-    .select("score");
-
-  if (error) return NextResponse.json({ total: 0 });
-
-  const total = (data || []).reduce(
-    (sum, row) => sum + ((row.score as number) || 0),
-    0
-  );
-  return NextResponse.json({ total });
+  try {
+    const { counterTotals } = await getGlobalStats();
+    const total = Object.values(counterTotals).reduce((sum, v) => sum + v, 0);
+    return NextResponse.json(
+      { total },
+      { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } }
+    );
+  } catch {
+    return NextResponse.json({ total: 0 });
+  }
 }

@@ -15,11 +15,11 @@ const publicLinks = [
   { href: "/", label: "Counterwatch" },
 ];
 
-export default function Navbar({ isLoggedIn: initialIsLoggedIn }: { isLoggedIn: boolean }) {
+export default function Navbar({ isLoggedIn: initialIsLoggedIn, initialVoteCount = null }: { isLoggedIn: boolean; initialVoteCount?: number | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(initialIsLoggedIn);
-  const [voteCount, setVoteCount] = useState<number | null>(null);
+  const [voteCount] = useState<number | null>(initialVoteCount);
 
   useEffect(() => {
     const supabase = createClient();
@@ -29,13 +29,6 @@ export default function Navbar({ isLoggedIn: initialIsLoggedIn }: { isLoggedIn: 
     });
     return () => subscription.unsubscribe();
   }, [router]);
-
-  useEffect(() => {
-    fetch("/api/vote-count")
-      .then((r) => r.json())
-      .then((d) => setVoteCount(d.total))
-      .catch(() => {});
-  }, []);
 
   const links = isLoggedIn ? authLinks : publicLinks;
 

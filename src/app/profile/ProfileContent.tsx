@@ -12,6 +12,7 @@ interface ProfileContentProps {
   heroes: Hero[];
   initialFavorites: string[];
   email: string;
+  initialTargetScores?: Record<string, number>;
 }
 
 interface CounterEntry {
@@ -41,20 +42,14 @@ export default function ProfileContent({
   heroes,
   initialFavorites,
   email,
+  initialTargetScores = {},
 }: ProfileContentProps) {
   const [favorites, setFavorites] = useState<string[]>(initialFavorites);
   const [mainsInsights, setMainsInsights] = useState<Record<string, MainInsight>>({});
-  const [targetScores, setTargetScores] = useState<Record<string, number>>({});
+  const [targetScores] = useState<Record<string, number>>(initialTargetScores);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const router = useRouter();
   const heroMap = Object.fromEntries(heroes.map((h) => [h.slug, h]));
-
-  useEffect(() => {
-    fetch("/api/global-stats")
-      .then((r) => r.json())
-      .then((d) => setTargetScores(d.allTargetScores || {}))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (favorites.length === 0) return;

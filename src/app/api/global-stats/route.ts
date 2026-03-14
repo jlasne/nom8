@@ -39,5 +39,8 @@ export async function GET() {
     Object.entries(counterTotals).map(([slug, score]) => [slug, score])
   );
 
-  return NextResponse.json({ byRole, bestCounters, mostCountered, allTargetScores, allCounterScores });
+  return NextResponse.json(
+    { byRole, bestCounters, mostCountered, allTargetScores, allCounterScores },
+    { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } }
+  );
 }

@@ -32,8 +32,8 @@ export async function GET(req: NextRequest) {
     hero: heroMap[e.slug],
   }));
 
-  return NextResponse.json({
-    iCounter: iCounterEnriched,
-    countersMe: countersMeEnriched,
-  });
+  return NextResponse.json(
+    { iCounter: iCounterEnriched, countersMe: countersMeEnriched },
+    { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } }
+  );
 }

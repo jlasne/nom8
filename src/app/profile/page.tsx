@@ -1,4 +1,4 @@
-import { getHeroes } from "@/lib/data";
+import { getHeroes, getGlobalStats } from "@/lib/data";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -26,12 +26,13 @@ export default async function ProfilePage({
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const heroes = await getHeroes();
+  const [heroes, stats] = await Promise.all([getHeroes(), getGlobalStats()]);
   return (
     <ProfileContent
       heroes={heroes}
       initialFavorites={user.favorites}
       email={user.email}
+      initialTargetScores={stats.targetTotals}
     />
   );
 }

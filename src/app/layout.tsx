@@ -4,6 +4,7 @@ import Script from "next/script";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
 import { getCurrentUser } from "@/lib/auth";
+import { getGlobalStats } from "@/lib/data";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -22,12 +23,16 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
+  const [user, stats] = await Promise.all([
+    getCurrentUser(),
+    getGlobalStats().catch(() => ({ counterTotals: {}, targetTotals: {} })),
+  ]);
+  const voteCount = Object.values(stats.counterTotals).reduce((sum, v) => sum + v, 0);
 
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Navbar isLoggedIn={!!user} />
+        <Navbar isLoggedIn={!!user} initialVoteCount={voteCount} />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {children}
         </main>
